@@ -249,7 +249,7 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .doc th{background:#4A2878;color:#fff;font-weight:700;border-color:#7B5EA7;text-align:center}
 .doc tr:nth-child(even) td{background:#F9F7FF}
 .doc .sig{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:36px;text-align:center}
-.doc .sig div{border-top:1px dashed #9a8fa6;padding-top:6px}
+.doc .sig>div{border-top:1px dashed #9a8fa6;padding-top:6px}
 .doc .stamp{display:inline-block;border:2px solid #15803D;color:#15803D;border-radius:6px;padding:2px 12px;font-weight:700;font-size:13px;transform:rotate(-3deg)}
 .doc .wm{color:#B45309;border-color:#B45309}
 .doc-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 auto 16px;max-width:820px}
@@ -275,8 +275,14 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 mark{background:#FDE68A;color:inherit;border-radius:3px;padding:0 2px}
 .up-row{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px;background:var(--head)}
 .up-name{font-size:13px;font-weight:600;margin-bottom:6px;word-break:break-all}
-.up-grid{display:grid;grid-template-columns:2fr 90px 100px 140px;gap:6px}
+.up-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.up-grid label span{display:block;font-size:11px;color:var(--muted);font-weight:600}.up-grid .up-t{grid-column:1/-1}
 @media (max-width:600px){.up-grid{grid-template-columns:1fr 1fr}}
+.ap-prev{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--jouf-soft);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px}
+.ap-prev b{display:block;font-size:15px;color:var(--jouf-deep)}
+.bk-list{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:9px}
+.bk-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #F4F0FA}.bk-row:last-child{border-bottom:0}
+.bk-name{flex:1;font-size:13px;line-height:1.4}.bk-name small{display:block;color:var(--muted);font-size:11.5px}
 .up-st{margin-top:4px}
 /* ---------- scrollbars like the training portal ---------- */
 ::-webkit-scrollbar{width:12px;height:12px}
@@ -340,7 +346,7 @@ function weekday(d){ try{ return new Intl.DateTimeFormat("ar-SA",{weekday:"long"
 const isLate = d => d.due_date && !["done","cancelled"].includes(d.status) && d.due_date < todayISO();
 const pct = (a,b) => b ? Math.round(a*100/b) : 0;
 function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
-function genPassword(){ const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"; const b=new Uint32Array(10); crypto.getRandomValues(b); let s=""; b.forEach(x=>s+=a[x%a.length]); return s.slice(0,4)+"@"+s.slice(4); }
+function genPassword(){ const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"; const b=new Uint32Array(10); crypto.getRandomValues(b); let s=""; b.forEach(x=>s+=a[x%a.length]); if(!/\d/.test(s)) s=s.slice(0,-1)+"23456789"[b[0]%8]; if(!/[A-Za-z]/.test(s)) s="K"+s.slice(1); return s.slice(0,4)+"@"+s.slice(4); }
 async function sha(text){ const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text)); return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 function csvDownload(name, rows){
   const csv="\uFEFF"+rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
@@ -379,8 +385,8 @@ const LocalStore = {
       attendance:reg.members.map((m,i)=>({name:m.name,role:m.role,state:i===4?"excused":"present"})),guests:"",
       items:[{id:uuid(),topic:"متابعة جاهزية الجداول الدراسية للفصل الأول",task:0,discussion:"استعرضت الوحدة حالة الجداول وتبيّن وجود شعب دون تحديد قاعات في برنامجين."},
              {id:uuid(),topic:"معالجة طلبات الحذف والإضافة",task:1,discussion:"ناقش الأعضاء آلية استقبال الطلبات وتوزيعها بين الفروع."}],
-      status:"approved",review_note:"",created_by:tolba,created_at:"2026-09-02T10:00:00Z",approved_by:admin,approved_at:"2026-09-03T08:00:00Z"};
-    const m2 = {...m1,id:uuid(),seq:2,ref:"REG-1448-02",meeting_date:"2026-10-07",status:"submitted",approved_by:null,approved_at:null,
+      status:"approved",review_note:"",created_by:tolba,created_at:"2026-09-02T10:00:00Z",approved_by:admin,approved_at:"2026-09-03T08:00:00Z",approval_no:"1111/48/3",approval_date:"2026-09-03"};
+    const m2 = {...m1,id:uuid(),seq:2,ref:"REG-1448-02",meeting_date:"2026-10-07",status:"submitted",approved_by:null,approved_at:null,approval_no:null,approval_date:null,
       items:[{id:uuid(),topic:"طلبات الطلبة المتوقع تخرجهم",task:3,discussion:"عُرضت قائمة بالطلبة المتوقع تخرجهم ممن تبقّت لهم مقررات."}]};
     this.w("minutes",[m1,m2]);
     this.w("decisions",[
@@ -724,9 +730,9 @@ function viewUnit(id,tab){
       <nav class="tabs">${tabs.map(([k,l])=>`<a href="#/unit/${u.id}/${k}" class="${k===tab?"on":""}">${l}</a>`).join("")}</nav>${body}`};
 }
 function minutesTable(ms,showUnit){
-  return `<div class="tbl-wrap"><table class="t"><thead><tr><th>الرقم</th>${showUnit?"<th>الوحدة / اللجنة</th>":""}<th>التاريخ</th><th>الفصل</th><th>البنود</th><th>القرارات</th><th>الحالة</th></tr></thead><tbody>
+  return `<div class="tbl-wrap"><table class="t"><thead><tr><th>الرقم</th>${showUnit?"<th>الوحدة / اللجنة</th>":""}<th>التاريخ</th><th>الفصل</th><th>البنود</th><th>القرارات</th><th>الحالة</th><th>رقم الاعتماد</th></tr></thead><tbody>
     ${ms.map(m=>{ const ds=S.decisions.filter(d=>d.minute_id===m.id); return `<tr class="clk" data-href="#/minute/${m.id}"><td><b>${m.seq}</b><div class="hint" dir="ltr" style="text-align:right">${esc(m.ref)}</div></td>${showUnit?`<td>${esc(unitById(m.unit_id)?.name)}</td>`:""}
-      <td>${fmtG(m.meeting_date)}<div class="hint">${fmtH(m.meeting_date)}</div></td><td>${esc(m.semester)}</td><td>${(m.items||[]).length}</td><td>${ds.length}</td><td><span class="chip c-${m.status}">${M_STATUS[m.status]}</span></td></tr>`; }).join("")}
+      <td>${fmtG(m.meeting_date)}<div class="hint">${fmtH(m.meeting_date)}</div></td><td>${esc(m.semester)}</td><td>${(m.items||[]).length}</td><td>${ds.length}</td><td><span class="chip c-${m.status}">${M_STATUS[m.status]}</span></td><td>${approvalCell(m)}</td></tr>`; }).join("")}
   </tbody></table></div>`;
 }
 
@@ -848,10 +854,11 @@ function bindEditor(){
       d.items.unshift({id:uuid(),topic:`متابعة تنفيذ قرارات الاجتماع السابق رقم (${prev.seq})`,task:"",discussion: ds.length? ds.map((x,k)=>`${k+1}. ${x.text}: ${D_STATUS[x.status]}${x.progress_note?" ("+x.progress_note+")":""}`).join("\n") : "لا توجد قرارات مسجلة في الاجتماع السابق.",decisions:[]});
       render(); return;
     }
+    if(b.dataset.save==="approved") return approvalModal(d,v=>saveMinute("approved",b,v));
     if(b.dataset.save) await saveMinute(b.dataset.save,b);
   });
 }
-async function saveMinute(status,btn){
+async function saveMinute(status,btn,extra){
   const d=S.draft; const u=unitById(d.unit_id);
   if(!d.meeting_date) return toast("حدّد تاريخ الاجتماع");
   if(d.items.some(it=>!it.topic.trim())) return toast("اكتب موضوع كل بند أو احذف البند الفارغ");
@@ -863,6 +870,7 @@ async function saveMinute(status,btn){
     const row={id,unit_id:d.unit_id,year:d.year,semester:d.semester,seq:d.seq,ref:`${u.id}-${d.year}-${String(d.seq).padStart(2,"0")}`,meeting_date:d.meeting_date,start_time:d.start_time,end_time:d.end_time,
       place:d.place,mode:d.mode,attendance:d.attendance,guests:d.guests,items:d.items.map(({decisions,...it})=>it),status,review_note: status==="draft"? (d.review_note||null) : null};
     if(!d.id){ row.created_by=S.user.id; }
+    if(extra) Object.assign(row,extra);
     if(Store.mode==="demo" && status==="approved"){ row.approved_by=S.user.id; row.approved_at=new Date().toISOString(); }
     await Store.upsert("minutes",[row]);
     const decs=[]; d.items.forEach((it,i)=>(it.decisions||[]).forEach(x=>{ if(x.text&&x.text.trim()) decs.push({id:x.id||uuid(),minute_id:id,unit_id:d.unit_id,item_idx:i,text:x.text.trim(),owner:x.owner||null,due_date:x.due_date||null,status:x.status||"new",progress_note:x.progress_note||null}); }));
@@ -883,7 +891,7 @@ function minuteDoc(m){
   return `<article class="doc">
     <div class="doc-head"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>جامعة الجوف<br>الكلية التطبيقية</div>
       <div class="c"><img src="${LOGO.JU}" alt="جامعة الجوف" style="height:78px;width:auto"></div>
-      <div class="l">الرقم: <span dir="ltr">${esc(m.ref)}</span><br>التاريخ: ${fmtH(m.meeting_date)}<br>الموافق: ${fmtG(m.meeting_date)}م<br>${esc(m.semester)} ${esc(m.year)}هـ</div></div>
+      <div class="l">الرقم: <span dir="ltr">${esc(m.ref)}</span><br>التاريخ: ${fmtH(m.meeting_date)}<br>الموافق: ${fmtG(m.meeting_date)}م<br>${esc(m.semester)} ${esc(m.year)}هـ${m.approval_no?`<br>رقم الاعتماد: <b dir="ltr">${esc(m.approval_no)}</b>`:""}</div></div>
     <h2>محضر الاجتماع رقم (${m.seq}) ${esc(li(u.name))}<br><span style="font-size:15px;font-weight:500">للعام الجامعي ${esc(m.year)}هـ</span></h2>
     <p>إنه في يوم ${weekday(m.meeting_date)} الموافق ${fmtH(m.meeting_date)} (${fmtG(m.meeting_date)}م)، وفي تمام الساعة ${esc(m.start_time||"—")}، عُقد الاجتماع رقم (${m.seq}) ${esc(li(u.name))} ${m.mode==="حضوري"?"حضوريًا":m.mode==="عن بُعد"?"عن بُعد":"بشكل مدمج"} ${m.place?"في "+esc(m.place):""}، برئاسة ${esc(supervisorOf(u))}، وبحضور كلٍّ من:</p>
     <table><thead><tr><th style="width:36px">م</th><th>الاسم</th><th>الصفة</th><th>الحضور</th><th style="width:110px">التوقيع</th></tr></thead><tbody>
@@ -897,7 +905,7 @@ function minuteDoc(m){
       ${dd.length?`<table><thead><tr><th style="width:36px">م</th><th>القرار / التوصية</th><th style="width:170px">المسؤول</th><th style="width:100px">موعد التنفيذ</th></tr></thead><tbody>${dd.map((x,k)=>`<tr><td>${k+1}</td><td>${esc(x.text)}</td><td>${esc(x.owner||"—")}</td><td>${fmtG(x.due_date)}</td></tr>`).join("")}</tbody></table>`:""}`; }).join("")}
     <p style="margin-top:18px">وانتهى الاجتماع في تمام الساعة ${esc(m.end_time||"—")}، والله الموفق.</p>
     <div class="sig"><div>${headTitle(u)} ${kindWord(u)}<br><b>${esc(supervisorOf(u))}</b></div>
-      <div>مشرف الشؤون الأكاديمية<br>${m.status==="approved"?`<span class="stamp">معتمد ${m.approved_at?fmtG(m.approved_at.slice(0,10)):""}</span>${appr?`<br><b>${esc(appr.full_name)}</b>`:""}`:`<span class="stamp wm">${M_STATUS[m.status]}</span>`}</div></div>
+      <div>مشرف الشؤون الأكاديمية<br>${m.status==="approved"?`<span class="stamp">معتمد</span>${m.approval_no?`<div style="font-size:12.5px;line-height:1.7;margin-top:4px">بالمعاملة رقم <b dir="ltr">${esc(m.approval_no)}</b><br>وتاريخ ${fmtH(m.approval_date)}<br>الموافق ${fmtG(m.approval_date)}م</div>`:""}${appr?`<b>${esc(appr.full_name)}</b>`:""}`:`<span class="stamp wm">${M_STATUS[m.status]}</span>`}</div></div>
   </article>`;
 }
 function viewMinute(id){
@@ -911,14 +919,14 @@ function viewMinute(id){
       ${canEdit?`<a class="btn" href="#/minute/${m.id}/edit">تعديل</a>`:""}
       ${w && ["draft","returned"].includes(m.status) && !isAdmin()?`<button class="btn primary" data-mstatus="submitted">رفع للاعتماد</button>`:""}
       ${isAdmin() && m.status!=="approved"?`<button class="btn ok" data-mstatus="approved">اعتماد المحضر</button><button class="btn" data-act="return">إعادة للتعديل</button>`:""}
-      ${isAdmin() && m.status==="approved"?`<button class="btn" data-mstatus="draft">إلغاء الاعتماد</button>`:""}
+      ${isAdmin() && m.status==="approved"?`<button class="btn" data-act="editapproval">بيانات الاعتماد</button><button class="btn" data-mstatus="draft">إلغاء الاعتماد</button>`:""}
       ${(isAdmin() || (w && ["draft","returned"].includes(m.status)))?`<button class="btn danger" data-act="delminute">حذف</button>`:""}
     </div>${minuteDoc(m)}`};
 }
-async function setMinuteStatus(id,status,note){
-  const patch={status,review_note:note??null};
+async function setMinuteStatus(id,status,note,extra){
+  const patch={status,review_note:note??null,...(extra||{})};
   if(Store.mode==="demo"&&status==="approved"){ patch.approved_by=S.user.id; patch.approved_at=new Date().toISOString(); }
-  if(status==="draft"){ patch.approved_by=null; patch.approved_at=null; }
+  if(status==="draft"){ patch.approved_by=null; patch.approved_at=null; patch.approval_no=null; patch.approval_date=null; }
   try{ await Store.update("minutes",id,patch); await loadAll(); toast({submitted:"رُفع المحضر للاعتماد",approved:"اعتُمد المحضر",returned:"أُعيد المحضر للتعديل",draft:"أُلغي الاعتماد"}[status]); render(); }
   catch(e){ toast("تعذّر التنفيذ: "+e.message); }
 }
@@ -974,7 +982,7 @@ function viewUsers(){
   const acc=uid=>S.access.filter(a=>a.user_id===uid).map(a=>unitById(a.unit_id)?.name).filter(Boolean);
   const supNoAccount = S.units.filter(u=>!S.access.some(a=>a.unit_id===u.id));
   return {title:"المستخدمون والصلاحيات", html:`
-    <div class="panel"><div class="panel-head"><h3>الحسابات</h3><button class="btn primary" data-act="newuser">إضافة مستخدم</button></div>
+    <div class="panel"><div class="panel-head"><h3>الحسابات</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-act="bulkusers">إنشاء حسابات الوحدات دفعة واحدة</button><button class="btn primary" data-act="newuser">إضافة مستخدم</button></div></div>
     <p class="hint" style="margin-top:-4px">عند إنشاء الحساب أو إعادة تعيين كلمة المرور تظهر كلمة مرور مؤقتة مرة واحدة فقط لتسليمها لصاحبها، ويُلزَم بتغييرها عند أول دخول. لا يمكن لأحد، بما في ذلك مدير المنصة، الاطلاع على كلمة المرور بعد ذلك.</p>
     <div class="tbl-wrap"><table class="t"><thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>الدور</th><th>الوحدات واللجان</th><th>الحالة</th><th></th></tr></thead><tbody>
     ${S.profiles.sort((a,b)=>a.role.localeCompare(b.role)).map(p=>`<tr><td><b>${esc(p.full_name)}</b></td><td dir="ltr" style="text-align:right">${esc(p.username)}</td><td>${ROLES[p.role]}</td>
@@ -1037,9 +1045,82 @@ function unitModal(u){
   };
 }
 
+/* ---------------- approval number & date ---------------- */
+const APPROVAL_RE=/^\d{1,6}\/\d{2}\/3$/;
+function hYear2(d){ try{ const y=new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{year:"numeric"}).format(dObj(d)); return ((y.match(/\d{4}/)||[""])[0]).slice(-2); }catch(e){ return ""; } }
+function normApproval(v,year){ v=String(v||"").replace(/\s/g,""); if(!v) return null; if(/^\d{1,6}$/.test(v)) return `${v}/${String(year||"").slice(-2)}/3`; return APPROVAL_RE.test(v)? v : undefined; }
+function approvalModal(cur,onOk){
+  cur=cur||{}; const n0=(cur.approval_no||"").split("/")[0];
+  modal(`<h3>بيانات اعتماد المحضر</h3><form id="apf">
+    <p class="hint" style="margin-top:0">أدخل رقم معاملة الاعتماد وتاريخها، ويُكوَّن رقم الاعتماد تلقائيًا بالصيغة: رقم المعاملة / السنة الهجرية / 3.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+      <label class="f"><span>رقم المعاملة</span><input class="inp" name="n" inputmode="numeric" required value="${esc(n0)}" dir="ltr" placeholder="1111"></label>
+      <label class="f"><span>تاريخ الاعتماد (ميلادي)</span><input class="inp" type="date" name="d" required value="${cur.approval_date||todayISO()}"></label></div>
+    <div class="ap-prev"><div><span class="hint">رقم الاعتماد</span><b dir="ltr" id="ap-no"></b></div><div><span class="hint">التاريخ الهجري</span><b id="ap-h"></b></div><div><span class="hint">الموافق</span><b id="ap-g"></b></div></div>
+    <div class="acts"><button class="btn ok">اعتماد</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
+  const f=$("#apf");
+  const upd=()=>{ f.n.value=f.n.value.replace(/\D/g,""); $("#ap-no").textContent=`${f.n.value||"____"}/${hYear2(f.d.value)||"__"}/3`; $("#ap-h").textContent=f.d.value?fmtH(f.d.value):"—"; $("#ap-g").textContent=f.d.value?fmtG(f.d.value)+"م":"—"; };
+  f.oninput=upd; upd();
+  f.onsubmit=e=>{ e.preventDefault(); const no=`${f.n.value}/${hYear2(f.d.value)}/3`; if(!APPROVAL_RE.test(no)) return toast("تأكد من رقم المعاملة وتاريخ الاعتماد"); closeModal(); onOk({approval_no:no,approval_date:f.d.value}); };
+}
+const approvalCell = r => r.approval_no ? `<span dir="ltr" style="font-weight:700">${esc(r.approval_no)}</span>${r.approval_date?`<div class="hint">${fmtH(r.approval_date)}<br>${fmtG(r.approval_date)}م</div>`:""}` : '<span class="muted">—</span>';
+
+/* ---------------- bulk unit accounts ---------------- */
+function bulkAccountsModal(){
+  const have=new Set(S.access.map(a=>a.unit_id)); const taken=new Set(S.profiles.map(p=>p.username));
+  const list=S.units.filter(u=>!have.has(u.id));
+  if(!list.length) return toast("كل الوحدات واللجان لها حسابات بالفعل");
+  const uname=u=>{ let b=u.id.toLowerCase(), n=b, i=2; while(taken.has(n)) n=b+(i++); return n; };
+  modal(`<h3>إنشاء حسابات الوحدات واللجان</h3><form id="bkf">
+    <p class="hint" style="margin-top:0">يُنشأ حساب لكل وحدة أو لجنة باسم مستخدم ثابت خاص بها، ويُسجَّل باسم مشرفها أو رئيسها. عند تغيّر المشرف تكفي إعادة تعيين كلمة المرور وتعديل الاسم.</p>
+    <div class="bk-list">${list.map(u=>`<label class="bk-row"><input type="checkbox" name="u" value="${u.id}" ${["SUP","EXC"].includes(u.id)?"":"checked"}>
+      <span class="bk-name"><b>${esc(u.name)}</b><small>${esc(supervisorOf(u))}</small></span>
+      <input class="inp" data-un="${u.id}" value="${uname(u)}" dir="ltr" style="width:110px;min-height:32px;padding:4px 8px"></label>`).join("")}</div>
+    <div id="bk-st" class="hint" style="margin-top:8px"></div>
+    <div class="acts"><button class="btn primary" id="bk-go">إنشاء الحسابات المحددة</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
+  $(".modal").style.maxWidth="640px";
+  $("#bkf").onsubmit=async e=>{ e.preventDefault();
+    const ids=[...document.querySelectorAll("#bkf [name=u]:checked")].map(x=>x.value); if(!ids.length) return toast("اختر وحدة واحدة على الأقل");
+    const names=ids.map(id=>document.querySelector(`[data-un="${id}"]`).value.trim().toLowerCase());
+    if(names.some(n=>!/^[a-z0-9._-]{2,30}$/.test(n))) return toast("أسماء المستخدمين بحروف إنجليزية وأرقام فقط");
+    if(new Set(names).size!==names.length || names.some(n=>taken.has(n))) return toast("يوجد اسم مستخدم مكرر أو مستخدم مسبقًا");
+    $("#bk-go").disabled=true; const res=[];
+    for(const [i,id] of ids.entries()){
+      const u=unitById(id); const pw=genPassword(); $("#bk-st").textContent=`جارٍ إنشاء ${i+1} من ${ids.length}: ${u.name}`;
+      try{ await Store.createUser({username:names[i],full_name:supervisorOf(u)==="—"?u.name:supervisorOf(u),role:"supervisor",password:pw,units:[id]}); res.push({unit:u.name,name:supervisorOf(u),username:names[i],password:pw}); }
+      catch(err){ res.push({unit:u.name,name:supervisorOf(u),username:names[i],error:err.message}); }
+    }
+    await loadAll(); render(); accountsResult(res);
+  };
+}
+function accountsResult(res){
+  const ok=res.filter(r=>!r.error);
+  modal(`<h3>بيانات الدخول (${ok.length} حساب)</h3><div>
+    <div class="err" style="background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)">كلمات المرور المؤقتة تظهر الآن فقط ولن تظهر مرة أخرى. اطبع البطاقات أو حمّل الملف قبل الإغلاق، وسيُلزَم كل مشرف بتغيير كلمة المرور عند أول دخول.</div>
+    <div class="tbl-wrap" style="max-height:340px;overflow:auto"><table class="t"><thead><tr><th>الوحدة / اللجنة</th><th>المشرف</th><th>اسم المستخدم</th><th>كلمة المرور المؤقتة</th></tr></thead><tbody>
+    ${res.map(r=>`<tr><td>${esc(r.unit)}</td><td>${esc(r.name)}</td><td dir="ltr" style="text-align:right">${esc(r.username)}</td><td dir="ltr" style="text-align:right;font-weight:700">${r.error?`<span style="color:var(--late)">${esc(r.error)}</span>`:esc(r.password)}</td></tr>`).join("")}</tbody></table></div>
+    <div class="acts"><button class="btn primary" id="ac-print">طباعة بطاقات الدخول</button><button class="btn" id="ac-csv">تحميل ملف Excel (CSV)</button><button class="btn" data-close>تم</button></div></div>`);
+  $(".modal").style.maxWidth="720px";
+  $("#ac-csv").onclick=()=>csvDownload("بيانات_دخول_وثيق.csv",[["الوحدة / اللجنة","المشرف","اسم المستخدم","كلمة المرور المؤقتة","رابط المنصة"],...ok.map(r=>[r.unit,r.name,r.username,r.password,location.origin+location.pathname])]);
+  $("#ac-print").onclick=()=>printCards(ok);
+}
+function printCards(rows){
+  const link=location.origin+location.pathname;
+  const cards=rows.map(r=>`<div class="card"><img src="${LOGO.JU}" alt=""><div><div class="t">منصة وثيق · بيانات الدخول</div><h2>${esc(r.unit)}</h2><div class="u">${esc(r.name)}</div>
+    <table><tr><td>رابط المنصة</td><td class="v">${esc(link)}</td></tr><tr><td>اسم المستخدم</td><td class="v">${esc(r.username)}</td></tr><tr><td>كلمة المرور المؤقتة</td><td class="v">${esc(r.password)}</td></tr></table>
+    <div class="n">كلمة المرور مؤقتة، وسيُطلب منك اختيار كلمة مرور خاصة بك عند أول دخول. يُرجى عدم مشاركة هذه البطاقة.</div></div></div>`).join("");
+  const w=window.open("","_blank"); if(!w) return toast("اسمح بالنوافذ المنبثقة لطباعة البطاقات");
+  w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>بطاقات دخول منصة وثيق</title><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>body{font-family:Tajawal,Tahoma,sans-serif;color:#2D1B5E;margin:0;padding:8mm}.card{border:2px solid #4A2878;border-radius:12px;padding:12px 16px;margin-bottom:7mm;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;page-break-inside:avoid;break-inside:avoid}
+  .card img{height:78px}.t{font-size:12px;color:#7B6FA0;font-weight:700}h2{margin:2px 0;font-size:17px;color:#4A2878}.u{font-size:13.5px;margin-bottom:6px}table{border-collapse:collapse;font-size:13.5px}td{padding:3px 0 3px 12px}
+  .v{direction:ltr;text-align:right;font-weight:800;background:#F0EBF8;border-radius:6px;padding:2px 10px}.n{font-size:11.5px;color:#666;margin-top:6px}@page{size:A4;margin:10mm}</style></head>
+  <body>${cards}<script>window.onload=function(){setTimeout(function(){window.print()},500)}<\/script></body></html>`);
+  w.document.close();
+}
+
 /* ---------------- archive of previous minutes ---------------- */
 const ARCH_YEARS = ["1444","1445","1446","1447","1448"];
-const ARCH_COLS = "id,unit_id,year,semester,seq,meeting_date,title,notes,file_path,file_name,file_type,file_size,has_text,uploaded_by,created_at";
+const ARCH_COLS = "id,unit_id,year,semester,seq,meeting_date,title,notes,file_path,file_name,file_type,file_size,has_text,uploaded_by,created_at,approval_no,approval_date";
 function normAr(t){ return String(t||"").replace(/[\u064B-\u0652\u0670\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/\s+/g," ").trim().toLowerCase(); }
 function arRegex(q){
   const map={"ا":"[اأإآٱ]","ه":"[هة]","ي":"[يىئ]","و":"[وؤ]"};
@@ -1142,7 +1223,7 @@ function archiveResultsHTML(insertMode){
     <div class="arch-snip">${snip}</div></div>`;
   return `<div class="hint" style="margin:6px 0 10px">${arch.length+plat.length} نتيجة</div>`+
     plat.map(m=>row("p",m,`${unitById(m.unit_id)?.name} · محضر رقم ${m.seq}`,`${m.year}هـ · ${fmtG(m.meeting_date)}`,snippet(minuteText(m),AR.q),`<a class="btn sm" href="#/minute/${m.id}" ${insertMode?'target="_blank"':""}>فتح</a>`)).join("")+
-    arch.map(r=>row("a",r,r.title,`${esc(unitById(r.unit_id)?.name||r.unit_id)} · ${r.year}هـ${r.seq?` · محضر ${r.seq}`:""}${r.meeting_date?" · "+fmtG(r.meeting_date):""}`,
+    arch.map(r=>row("a",r,r.title,`${esc(unitById(r.unit_id)?.name||r.unit_id)} · ${r.year}هـ${r.seq?` · محضر ${r.seq}`:""}${r.meeting_date?" · "+fmtG(r.meeting_date):""}${r.approval_no?` · اعتماد <span dir="ltr">${esc(r.approval_no)}</span>`:""}`,
       r.has_text? snippet(r.content,AR.q) : `<span class="muted">ملف ممسوح ضوئيًا: البحث فيه بالعنوان فقط.</span>`,`<button class="btn sm" data-arch-open="${r.id}">فتح الملف</button>`)).join("");
 }
 async function runArchiveSearch(rerender){
@@ -1176,8 +1257,8 @@ function viewArchive(){
 }
 function archiveTable(rows){
   if(!rows.length) return `<div class="empty">لا توجد محاضر مؤرشفة هنا بعد.</div>`;
-  return `<table class="t"><thead><tr><th>العنوان</th><th>الوحدة / اللجنة</th><th>العام</th><th>رقم المحضر</th><th>التاريخ</th><th>الملف</th><th></th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td><b>${esc(r.title)}</b>${r.has_text?"":'<div class="hint">ممسوح ضوئيًا</div>'}</td><td>${esc(unitById(r.unit_id)?.name||r.unit_id)}</td><td>${r.year}${r.semester?`<div class="hint">${esc(r.semester)}</div>`:""}</td><td>${r.seq||"—"}</td><td>${r.meeting_date?fmtG(r.meeting_date):"—"}</td>
+  return `<table class="t"><thead><tr><th>العنوان</th><th>الوحدة / اللجنة</th><th>العام</th><th>رقم المحضر</th><th>التاريخ</th><th>رقم الاعتماد</th><th>الملف</th><th></th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td><b>${esc(r.title)}</b>${r.has_text?"":'<div class="hint">ممسوح ضوئيًا</div>'}</td><td>${esc(unitById(r.unit_id)?.name||r.unit_id)}</td><td>${r.year}${r.semester?`<div class="hint">${esc(r.semester)}</div>`:""}</td><td>${r.seq||"—"}</td><td>${r.meeting_date?fmtG(r.meeting_date):"—"}</td><td>${approvalCell(r)}</td>
       <td class="hint">${esc((r.file_name||"").slice(0,40))}<br>${r.file_size?fmtSize(r.file_size):""}</td>
       <td style="white-space:nowrap"><button class="btn sm" data-arch-open="${r.id}">فتح</button>${canWrite(r.unit_id)?` <button class="btn sm" data-arch-edit="${r.id}">تعديل</button>`:""}${(isAdmin()||r.uploaded_by===S.user.id)?` <button class="btn sm danger" data-arch-del="${r.id}">حذف</button>`:""}</td></tr>`).join("")}
   </tbody></table>`;
@@ -1200,10 +1281,12 @@ function uploadModal(presetUnit){
     <div class="acts"><button class="btn primary" id="up-go" disabled>رفع الملفات</button><button type="button" class="btn" data-close>إغلاق</button></div></form>`);
   const f=$("#upf"); let files=[];
   const rowsHTML=()=>files.map((x,i)=>`<div class="up-row" data-up="${i}"><div class="up-name">${esc(x.file.name)} <span class="hint">${fmtSize(x.file.size)}</span></div>
-    <div class="up-grid"><input class="inp" data-uk="title" value="${esc(x.title)}" placeholder="عنوان المحضر">
-      <input class="inp" data-uk="seq" type="number" min="1" value="${x.seq}" placeholder="رقم المحضر">
-      <select class="inp" data-uk="year"><option value="">العام</option>${ARCH_YEARS.map(y=>`<option ${x.year===y?"selected":""}>${y}</option>`).join("")}</select>
-      <input class="inp" data-uk="meeting_date" type="date" value="${x.meeting_date||""}" title="تاريخ الاجتماع (اختياري)"></div>
+    <div class="up-grid"><label class="up-t"><span>عنوان المحضر</span><input class="inp" data-uk="title" value="${esc(x.title)}"></label>
+      <label><span>رقم المحضر</span><input class="inp" data-uk="seq" type="number" min="1" value="${x.seq}"></label>
+      <label><span>العام</span><select class="inp" data-uk="year"><option value="">—</option>${ARCH_YEARS.map(y=>`<option ${x.year===y?"selected":""}>${y}</option>`).join("")}</select></label>
+      <label><span>تاريخ الاجتماع</span><input class="inp" data-uk="meeting_date" type="date" value="${x.meeting_date||""}"></label>
+      <label><span>رقم الاعتماد</span><input class="inp" data-uk="approval_no" value="${esc(x.approval_no||"")}" dir="ltr" placeholder="1111/48/3"></label>
+      <label><span>تاريخ الاعتماد</span><input class="inp" data-uk="approval_date" type="date" value="${x.approval_date||""}"></label></div>
     <div class="up-st hint">${x.st||""}</div></div>`).join("");
   f.files.onchange=()=>{ const y=f.year.value; files=[...f.files.files].map(file=>{ const g=guessFromName(file.name); return {file,title:g.title,seq:g.seq,year:y||g.year,meeting_date:"",st:""}; });
     $("#up-rows").innerHTML=rowsHTML(); $("#up-go").disabled=!files.length; $("#up-go").textContent=`رفع ${files.length} ${files.length>10||files.length<3?"ملف":"ملفات"}`; };
@@ -1212,6 +1295,7 @@ function uploadModal(presetUnit){
   f.onsubmit=async e=>{ e.preventDefault();
     if(files.some(x=>!x.year)) return toast("حدّد العام لكل ملف");
     if(files.some(x=>x.file.size>25*1048576)) return toast("الحد الأقصى لحجم الملف 25 م.ب");
+    for(const x of files){ const a=normApproval(x.approval_no,x.year); if(a===undefined) return toast(`رقم الاعتماد «${x.approval_no}» غير صحيح، الصيغة: 1111/48/3`); x.approvalN=a; }
     const btn=$("#up-go"); btn.disabled=true; let ok=0;
     for(const [i,x] of files.entries()){
       if(x.done) continue; const st=document.querySelector(`[data-up="${i}"] .up-st`);
@@ -1221,7 +1305,7 @@ function uploadModal(presetUnit){
         const ext=(x.file.name.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"");
         const id=uuid(); const unit=f.unit.value;
         await Store.archiveUpload({id,unit_id:unit,year:x.year,semester:f.semester.value||null,seq:x.seq?+x.seq:null,meeting_date:x.meeting_date||null,title:(x.title||x.file.name).trim(),notes:null,
-          file_path:`${unit}/${x.year}/${id}.${ext}`,file_name:x.file.name,file_type:x.file.type||ext,file_size:x.file.size,content:has?content:null,search_text:normAr((x.title||"")+" "+(has?content:"")),has_text:has,uploaded_by:S.user.id,created_at:new Date().toISOString()},x.file);
+          file_path:`${unit}/${x.year}/${id}.${ext}`,file_name:x.file.name,file_type:x.file.type||ext,file_size:x.file.size,approval_no:x.approvalN||null,approval_date:x.approval_date||null,content:has?content:null,search_text:normAr((x.title||"")+" "+(x.approvalN||"")+" "+(has?content:"")),has_text:has,uploaded_by:S.user.id,created_at:new Date().toISOString()},x.file);
         x.done=true; ok++; st.innerHTML=`<span style="color:var(--ok)">✓ تم${has?"، والنص قابل للبحث":"، ملف ممسوح ضوئيًا (البحث بالعنوان)"}</span>`;
       }catch(err){ st.innerHTML=`<span style="color:var(--late)">✕ ${esc(err.message)}</span>`; }
     }
@@ -1237,12 +1321,15 @@ function archEditModal(r){
       <label class="f"><span>العام</span><select class="inp" name="year">${ARCH_YEARS.map(y=>`<option ${r.year===y?"selected":""}>${y}</option>`).join("")}</select></label>
       <label class="f"><span>الفصل</span><select class="inp" name="semester"><option value="">غير محدد</option>${SEMESTERS.map(s=>`<option ${r.semester===s?"selected":""}>${s}</option>`).join("")}</select></label>
       <label class="f"><span>رقم المحضر</span><input class="inp" type="number" min="1" name="seq" value="${r.seq||""}"></label>
-      <label class="f"><span>تاريخ الاجتماع</span><input class="inp" type="date" name="meeting_date" value="${r.meeting_date||""}"></label></div>
+      <label class="f"><span>تاريخ الاجتماع</span><input class="inp" type="date" name="meeting_date" value="${r.meeting_date||""}"></label>
+      <label class="f"><span>رقم الاعتماد</span><input class="inp" name="approval_no" dir="ltr" placeholder="1111/48/3" value="${esc(r.approval_no||"")}"></label>
+      <label class="f"><span>تاريخ الاعتماد</span><input class="inp" type="date" name="approval_date" value="${r.approval_date||""}"></label></div>
     <label class="f"><span>ملاحظات</span><textarea class="inp" name="notes">${esc(r.notes||"")}</textarea></label>
     <div class="acts"><button class="btn primary">حفظ</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
   $("#aef").onsubmit=async e=>{ e.preventDefault(); const f=e.target;
+    const apn=normApproval(f.approval_no.value,f.year.value); if(apn===undefined) return toast("رقم الاعتماد غير صحيح، الصيغة: 1111/48/3");
     try{ const full=await Store.archiveGet(r.id);
-      await Store.archiveUpdate(r.id,{title:f.title.value.trim(),unit_id:f.unit.value,year:f.year.value,semester:f.semester.value||null,seq:f.seq.value?+f.seq.value:null,meeting_date:f.meeting_date.value||null,notes:f.notes.value||null,search_text:normAr(f.title.value+" "+(full?.content||""))});
+      await Store.archiveUpdate(r.id,{title:f.title.value.trim(),unit_id:f.unit.value,year:f.year.value,semester:f.semester.value||null,seq:f.seq.value?+f.seq.value:null,meeting_date:f.meeting_date.value||null,approval_no:apn,approval_date:f.approval_date.value||null,notes:f.notes.value||null,search_text:normAr(f.title.value+" "+(apn||"")+" "+(full?.content||""))});
       S.archive=await Store.archiveList(); closeModal(); toast("حُفظت البيانات"); render(); }catch(err){ toast(err.message); } };
 }
 async function archOpen(id){
@@ -1326,6 +1413,7 @@ function afterRender(){
     if(a==="print") return window.print();
     if(a==="canceled"){ S.draft=null; return; }
     if(a==="newuser") return userModal(null);
+    if(a==="bulkusers") return bulkAccountsModal();
     if(b.dataset.newuserFor) return userModal(null,b.dataset.newuserFor);
     if(b.dataset.editUser) return userModal(S.profiles.find(p=>p.id===b.dataset.editUser));
     if(b.dataset.editUnit) return unitModal(unitById(b.dataset.editUnit));
@@ -1334,8 +1422,10 @@ function afterRender(){
     if(a==="newminute"){ const us=visibleUnits().filter(u=>canWrite(u.id)); if(us.length===1) return go("#/minute/new/"+us[0].id);
       return modal(`<h3>محضر جديد لـ</h3>${us.map(u=>`<a class="node" href="#/minute/new/${u.id}" data-close>${esc(u.name)}</a>`).join("")}<div class="acts"><button class="btn" data-close>إلغاء</button></div>`); }
     if(b.dataset.mstatus){ const id=location.hash.split("/")[2]; const st=b.dataset.mstatus;
-      if(st==="approved" && !confirm("اعتماد هذا المحضر؟ لن يتمكن مشرف الوحدة من تعديله بعد الاعتماد.")) return;
+      if(st==="approved") return approvalModal(S.minutes.find(x=>x.id===id),v=>setMinuteStatus(id,"approved",null,v));
+      if(st==="draft" && !confirm("إلغاء اعتماد المحضر وحذف رقم الاعتماد؟")) return;
       return setMinuteStatus(id,st); }
+    if(a==="editapproval"){ const id=location.hash.split("/")[2]; return approvalModal(S.minutes.find(x=>x.id===id),async v=>{ try{ await Store.update("minutes",id,v); await loadAll(); toast("حُدّثت بيانات الاعتماد"); render(); }catch(err){ toast(err.message); } }); }
     if(a==="return"){ const id=location.hash.split("/")[2];
       modal(`<h3>إعادة المحضر للتعديل</h3><form id="rf"><label class="f"><span>ملاحظاتك لمشرف الوحدة</span><textarea class="inp" name="n" required></textarea></label><div class="acts"><button class="btn primary">إعادة</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
       $("#rf").onsubmit=e2=>{ e2.preventDefault(); const n=e2.target.n.value; closeModal(); setMinuteStatus(id,"returned",n); }; return; }
