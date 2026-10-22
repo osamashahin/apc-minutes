@@ -272,6 +272,10 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .filters select,.filters input[type=text]{border:1px solid var(--line);border-radius:9px;padding:6px 10px;background:var(--field);min-height:36px;color:var(--ink)}
 
+.sg-sec{margin-bottom:12px}.sg-title{font-weight:700;color:var(--jouf-deep);font-size:13.5px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--jouf-soft)}
+.sg-row{display:flex;gap:8px;align-items:flex-start;padding:6px 4px;border-radius:7px;cursor:pointer;font-size:13.5px}.sg-row:hover{background:var(--head)}.sg-row small{display:block;color:var(--muted);font-size:11px}.sg-row input{margin-top:4px}
+.res-head{display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;gap:8px}
+.res-t td{vertical-align:top}.res-topic{font-weight:600;line-height:1.7}.res-sub{font-size:12px;color:var(--muted);line-height:1.7;margin-top:3px}
 .arch-hit{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
 .arch-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
 .arch-snip{font-size:13px;margin-top:6px;line-height:1.9;background:var(--head);border:1px solid var(--line-2);border-radius:7px;padding:6px 10px;max-height:180px;overflow:auto}
@@ -812,7 +816,7 @@ function viewEditor(id,unitId){
         <div class="seg" data-att="${i}">${Object.entries(ATT).map(([k,v])=>`<button type="button" data-v="${k}" class="${a.state===k?"on":""}">${v}</button>`).join("")}</div></div>`).join("")}</div>
       <label class="f" style="margin-top:12px;margin-bottom:0"><span>حضور من خارج التشكيل (اختياري)</span><input class="inp" data-k="guests" value="${esc(d.guests||"")}" placeholder="الاسم - الصفة، مفصولة بفاصلة"></label></div>
     <div class="panel-head"><h3 style="margin:0">جدول الأعمال والقرارات</h3>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-arch-search-editor="${u.id}">البحث في أرشيف المحاضر</button>${prev?`<button type="button" class="btn sm" data-act="addprev">إضافة بند متابعة قرارات المحضر رقم ${prev.seq}</button>`:""}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm primary" data-act="suggest">اقتراح موضوعات</button><button type="button" class="btn sm" data-arch-search-editor="${u.id}">البحث في أرشيف المحاضر</button>${prev?`<button type="button" class="btn sm" data-act="addprev">إضافة بند متابعة قرارات المحضر رقم ${prev.seq}</button>`:""}</div></div>
     ${d.items.map((it,i)=>`<div class="item"><div class="item-head"><b>البند ${i+1}</b>${d.items.length>1?`<button type="button" class="btn sm danger" data-del-item="${i}">حذف البند</button>`:""}</div>
       <label class="f"><span>الموضوع</span><input class="inp" data-i="${i}" data-ik="topic" value="${esc(it.topic)}" required></label>
       <label class="f"><span>المهمة المرتبطة من مهام ${kindWord(u)}</span><select class="inp" data-i="${i}" data-ik="task">
@@ -849,6 +853,7 @@ function bindEditor(){
     if(b.dataset.addDec!==undefined){ d.items[b.dataset.addDec].decisions.push({id:uuid(),text:"",owner:"",due_date:"",status:"new"}); render(); return; }
     if(b.dataset.delDec){ const [i,j]=b.dataset.delDec.split(":"); d.items[i].decisions.splice(j,1); render(); return; }
     if(b.dataset.delItem!==undefined){ if(confirm("حذف هذا البند وقراراته؟")){ d.items.splice(b.dataset.delItem,1); render(); } return; }
+    if(b.dataset.act==="suggest") return suggestModal();
     if(b.dataset.act==="additem"){ d.items.push({id:uuid(),topic:"",task:"",discussion:"",decisions:[]}); render(); return; }
     if(b.dataset.act==="addprev"){
       const prev=S.minutes.filter(x=>x.unit_id===d.unit_id&&x.id!==d.id&&x.meeting_date<=d.meeting_date).sort((a,b2)=>(b2.year+String(b2.seq).padStart(3,"0")).localeCompare(a.year+String(a.seq).padStart(3,"0")))[0];
@@ -1048,6 +1053,79 @@ function unitModal(u){
   };
 }
 
+/* ---------------- suggested agenda topics ---------------- */
+const DISC_TOPICS=[["s",0,"التوعية بلائحة تأديب الطلاب وقواعد السلوك مع بداية الفصل الدراسي"],["a",0,"دراسة حالات الإخلال بالنظام المحالة إلى اللجنة"],["m",2,"دراسة محاضر الغش في الاختبارات الفصلية"],["e",2,"دراسة محاضر الغش في الاختبارات النهائية"],["a",1,"رفع توصيات اللجنة إلى الجهات المختصة وفق لائحة تأديب الطلاب والطالبات"]];
+const PROG_TOPICS=f=>[["s",4,"متابعة توفر التوصيفات المحدثة للبرامج والمقررات وفق الخطط الدراسية"],["a",0,`دراسة مقترحات استحداث أو تطوير أو إلغاء البرامج ${f}`],["a",1,"دراسة احتياج سوق العمل للبرامج المقترح استحداثها"],["m",2,`مراجعة الخطط الدراسية والمقررات ${f}`],["m",3,`متابعة سير تقديم البرامج والمقررات ${f}`]];
+const TOPIC_BANK={
+SUP:[["s",6,"اقتراح مؤشرات الأداء والمستهدفات السنوية للكلية للعام الجامعي {year}هـ والرفع بها لمجلس الجامعة"],["s",1,"التنسيق مع الجامعة في أعداد المقبولين والبرامج المستهدفة وفق احتياج سوق العمل"],["m",3,"مراجعة التقرير الدوري لسير عمل الكلية التطبيقية وفروعها"],["a",4,"دراسة مقترحات الشراكات الاستراتيجية الجديدة مع القطاعات العامة والخاصة وغير الربحية"],["a",2,"متابعة التنسيق مع جهات التوطين لتوجيه الدعم للكلية"],["e",5,"مراجعة معايير اختيار وتقييم الرئيس التنفيذي ونائبه ومساعده والمديرين التنفيذيين"]],
+EXC:[["s",0,"التوصية بالموافقة على الخطة التشغيلية للكلية للعام الجامعي {year}هـ"],["s",8,"التوصية بالتعاقد مع أعضاء هيئة التدريس ومن في حكمهم للفصل الدراسي"],["a",1,"دراسة مقترحات استحداث برامج الدبلوم (المشارك والمتوسط) وخططها الدراسية"],["a",2,"دراسة مقترحات الدورات التدريبية التعليمية التطبيقية"],["a",4,"النظر في مقترحات تعديل أو إلغاء برامج الدبلوم وخططها الدراسية"],["a",3,"التحقق من مطابقة برامج الكلية للتصنيف والإطار الوطني للمؤهلات"],["a",9,"اقتراح ضوابط القبول والتسجيل والحذف والإضافة ومعادلة المقررات"],["m",7,"استعراض مستجدات الشراكات الاستراتيجية للكلية"],["e",6,"مناقشة التقرير السنوي للكلية وتقرير توظيف الخريجين والرفع بهما لمجلس الجامعة"]],
+SAC:[["s",0,"اعتماد الجداول الدراسية وتوزيع الشعب للفصل الدراسي"],["s",0,"البت في طلبات الحذف والإضافة والتحويل الواردة من لجنة الشؤون الأكاديمية الفرعية"],["m",1,"البت في طلبات إعادة القيد والفرص الإضافية والاعتذار عن الدراسة"],["m",1,"معادلة المقررات للطلبة المحولين"],["e",1,"البت في أعذار الغياب عن الاختبارات النهائية"],["e",0,"اعتماد نتائج الاختبارات النهائية"],["e",2,"اعتماد قوائم الخريجين والمتوقع تخرجهم"],["a",2,"دراسة الموضوعات الأكاديمية المرفوعة من وحدات ولجان الكلية"]],
+REG:[["s",0,"متابعة جاهزية الجداول الدراسية وتحديد أعضاء هيئة التدريس والقاعات للشعب"],["s",1,"متابعة سير عمليات التسجيل والحذف والإضافة مع الكليات المشغلة"],["s",2,"معالجة مشكلات التسجيل وتحديث الجداول أثناء فترة التسجيل"],["m",0,"متابعة إعداد جداول الاختبارات النهائية"],["e",3,"متابعة طلبات الطلبة الخريجين والمتوقع تخرجهم"],["a",4,"دراسة مشكلات التسجيل الطلابية والرفع بما يلزم للجنة الدائمة للشؤون الأكاديمية"],["a",5,"تحديث السجل الإلكتروني للموضوعات الطلابية"]],
+PRC:[["s",1,"مراجعة قائمة الشهادات المهنية المعتمدة لبرامج الكلية وفق احتياج سوق العمل"],["a",0,"اعتماد سياسة وإجراءات اختيار الشهادات والاختبارات المهنية وتحديثها"],["a",2,"التحقق من ارتباط برامج الكلية ودوراتها بالشهادات المهنية"],["m",4,"تنظيم محاضرة توعوية للطلبة بأهمية الشهادات المهنية"],["m",5,"إعداد الاختبارات المعيارية لقياس مهارات الطلبة"],["a",7,"دعم الشراكات مع الجهات المانحة للشهادات المهنية"],["e",3,"المراجعة الدورية للشهادات المهنية ومواءمتها لسوق العمل"]],
+TRG:[["s",3,"مخاطبة جهات التدريب الطلابي وتوزيع الطلبة المتدربين"],["a",1,"تحديد الاحتياجات التدريبية والحزم التدريبية المطلوبة"],["a",2,"تحكيم الحزم التدريبية المطورة وقياس جودتها"],["a",4,"إعداد اللائحة الداخلية للتدريب الطلابي"],["m",6,"متابعة تقارير المشرفين الأكاديميين عن أداء الطلبة في التدريب"],["a",8,"تفعيل قنوات التواصل مع خريجي الكلية"],["e",10,"الإعداد لملتقى خريجي الكلية"]],
+QAE:[["s",7,"اعتماد خطة تطبيق الاستبانات للفصل الدراسي (تقويم المقررات والبرامج ورضا الطلبة)"],["m",4,"مراجعة توصيفات البرامج والمقررات ومطابقتها لمتطلبات الاعتماد"],["m",8,"تنظيم ورشة عمل لنشر ثقافة الجودة والقياس"],["a",0,"متابعة مؤشرات الأداء والمستهدفات السنوية للكلية"],["a",6,"التنسيق مع عمادة الجودة بشأن متطلبات الاعتماد البرامجي"],["e",3,"متابعة استكمال تقارير المقررات الدراسية للفصل"],["e",11,"استعراض نتائج الاستبانات وتحليلها"],["e",12,"إعداد خطط التحسين بناءً على نتائج التقويم"]],
+ADV:[["s",11,"اعتماد الخطة السنوية للإرشاد الأكاديمي"],["s",1,"متابعة تسكين الطلبة بالمرشدين الأكاديميين"],["s",4,"تنفيذ البرنامج التوجيهي للطلبة المستجدين"],["m",9,"دراسة الحالات المتعثرة المرفوعة من المرشدين الأكاديميين"],["a",7,"التواصل مع الطلبة المنسحبين ودراسة أسباب الانسحاب"],["a",8,"معالجة المشكلات الطلابية السلوكية والدراسية"],["e",10,"الإعداد ليوم المهنة"]],
+ENG:[["s",6,"تطبيق اختبار تحديد المستوى القبلي للطلبة المستجدين"],["a",0,"تحديد معايير مستويات اللغة الإنجليزية المطلوبة في البرامج"],["a",4,"متابعة توفر التوصيفات المحدثة لمقررات اللغة الإنجليزية"],["a",3,"المراجعة الدورية لمقررات اللغة الإنجليزية مع الكلية المشغلة"],["m",7,"تنفيذ برامج وأنشطة تطوير مستوى الطلبة في اللغة الإنجليزية"],["e",6,"تطبيق الاختبار البعدي ومقارنة نتائجه بالاختبار القبلي"]],
+APP:[["s",0,"متابعة خطط عمل وحدات البرامج التطبيقية للفصل الدراسي"],["a",1,"اعتماد آلية تحديد البرامج المرغوب استحداثها"],["m",2,"متابعة مراجعة برامج الكلية وخططها ومقرراتها"],["a",3,"دراسة نتائج الاستبانات وورش العمل لتطوير الخطط الدراسية"],["e",0,"استعراض تقارير وحدات البرامج التطبيقية"]],
+ADM:PROG_TOPICS("الإدارية والإنسانية"), TEC:PROG_TOPICS("التقنية والهندسية"), HLT:PROG_TOPICS("الصحية والعلوم الأساسية"),
+PAR:[["s",0,"تحديث قائمة الشركاء الاستراتيجيين للكلية"],["a",2,"متابعة مذكرات التفاهم الموقعة وتفعيلها"],["a",2,"دراسة مقترحات مذكرات تفاهم جديدة"],["m",3,"التنسيق مع الشركاء لتقديم ورش عمل للطلبة وأعضاء هيئة التدريس"],["m",4,"ترتيب زيارات ميدانية للطلبة إلى قطاعات الشركاء"],["a",5,"بناء شراكات لدعم توظيف طلبة التدريب والخريجين"]],
+PRM:[["s",7,"اعتماد الخطة الإعلامية للكلية للفصل الدراسي"],["a",3,"متابعة نشر أخبار الكلية وإنجازاتها"],["a",4,"الاستعداد لفعاليات الكلية القادمة وتوثيقها"],["a",2,"متابعة حسابات الكلية في وسائل التواصل الاجتماعي"],["a",1,"تحديث مطبوعات الكلية الورقية والإلكترونية"],["m",8,"استعراض تقرير الرصد الإعلامي"]],
+HR:[["s",5,"متابعة مباشرة منسوبي الكلية وانتظام الحضور مع بداية الفصل"],["a",0,"اعتماد خطة البرامج التدريبية للموظفين"],["a",6,"حصر احتياجات الكلية من الموارد البشرية والتجهيزات والرفع بها"],["a",4,"متابعة المعاملات الإدارية لمنسوبي الكلية"],["a",7,"اقتراح استقطاب الكفاءات الأكاديمية للكلية"],["a",1,"اقتراح آليات تحفيز الموظفين وتقدير المتميزين"]],
+PLN:[["s",0,"اعتماد الخطة التشغيلية للكلية للعام الجامعي {year}هـ"],["a",2,"إجراء التحليل الرباعي (SWOT) للكلية ووحداتها"],["a",4,"تحديد المبادرات وأوزانها وربطها بالأهداف"],["a",5,"مراجعة مؤشرات الأداء المرتبطة بأهداف الخطة"],["m",6,"متابعة تنفيذ الخطة التشغيلية ونسب تحقق الأهداف"],["e",6,"إعداد تقرير متابعة الخطة التشغيلية للفصل"]],
+ACA:[["s",5,"إعداد تعاميم التهيئة والاستعداد للفصل الدراسي"],["a",0,"التنسيق مع منسقي مقرات الكلية في الشؤون الأكاديمية"],["a",1,"تحضير الموضوعات الأكاديمية للرفع بها للجنة الدائمة للشؤون الأكاديمية"],["m",2,"دراسة طلبات إعادة القيد والفرص الإضافية والاعتذار وتأجيل الدراسة"],["a",4,"متابعة طلبات التحويل من وإلى الكلية"],["e",3,"دراسة أعذار الغياب عن الاختبارات النهائية"],["e",8,"متابعة إعداد التقرير السنوي للكلية"]],
+ELR:[["s",11,"متابعة تفعيل أعضاء هيئة التدريس لنظام إدارة التعلم (بلاك بورد)"],["s",1,"تنظيم ورش تدريبية على أنظمة التعلم الإلكتروني للأعضاء والطلبة"],["m",0,"استعراض تقرير متابعة المحاضرات الإلكترونية"],["a",6,"تحديث صفحة الكلية على موقع الجامعة"],["a",7,"متابعة المشكلات الفنية والتقنية مع تقنية المعلومات"],["e",13,"إعداد تقرير واقع التعلم الإلكتروني في الكلية والتوصيات"]],
+ACT:[["s",2,"اعتماد الخطة السنوية للأنشطة وخدمة المجتمع"],["a",0,"تحديد قضايا المجتمع التي يمكن لبرامج الكلية الإسهام فيها"],["a",4,"تنظيم ندوة أو دورة تدريبية لخدمة المجتمع"],["a",10,"الإعداد للمسابقات الرياضية والعلمية والثقافية بين الطلبة"],["a",11,"ترشيح الطلبة المتميزين للمسابقات الخارجية"],["e",3,"قياس رضا المستفيدين عن الخدمات المجتمعية"]],
+PAID:[["s",1,"متابعة طرح المقررات وتوزيع الشعب في البرامج المدفوعة"],["s",2,"دراسة ترشيح أعضاء هيئة التدريس للتدريس في البرامج المدفوعة واعتماد الجداول"],["m",3,"متابعة الأداء الأكاديمي للطلبة ودراسة الحالات المتعثرة"],["a",4,"دراسة الاحتياجات الأكاديمية والتشغيلية للبرامج"],["a",6,"دراسة مقترحات تطوير البرامج القائمة أو استحداث برامج جديدة"],["e",5,"متابعة الاختبارات النهائية واعتماد النتائج"],["e",7,"استعراض مؤشرات أداء البرامج المدفوعة (التسجيل، الاستمرار، التعثر، الانسحاب، النجاح، الرضا)"],["e",9,"التوصية بصرف مكافآت الساعات التدريسية"],["e",8,"إعداد التقرير الدوري للجنة التنفيذية للبرامج المدفوعة"]],
+DSM:DISC_TOPICS, DSQ:DISC_TOPICS, DSS:DISC_TOPICS, DST:DISC_TOPICS
+};
+const PHASES={s:"بداية الفصل",m:"أثناء الفصل",e:"نهاية الفصل"};
+function defaultPhase(iso){ const mo=+(String(iso||todayISO()).slice(5,7)); return [8,9,1,2].includes(mo)?"s":[12,5,6,7].includes(mo)?"e":"m"; }
+function suggestionsFor(u,d,phase){
+  const year=S.settings.year||"1448", kw=kindWord(u);
+  const have=new Set(d.items.map(it=>normAr(it.topic)));
+  const findTask=re=>u.tasks.findIndex(t=>re.test(t));
+  const out={follow:[],bank:[],tasks:[]};
+  const prev=S.minutes.filter(x=>x.unit_id===u.id&&x.id!==d.id&&x.meeting_date<=d.meeting_date).sort((a,b)=>(b.year+String(b.seq).padStart(3,"0")).localeCompare(a.year+String(a.seq).padStart(3,"0")))[0];
+  if(prev){ const ds=S.decisions.filter(x=>x.minute_id===prev.id);
+    out.follow.push({topic:`متابعة تنفيذ قرارات الاجتماع السابق رقم (${prev.seq})`,task:"",discussion: ds.length? ds.map((x,k)=>`${k+1}. ${x.text}: ${D_STATUS[x.status]}${x.progress_note?" ("+x.progress_note+")":""}`).join("\n") : "لا توجد قرارات مسجلة في الاجتماع السابق."}); }
+  const late=S.decisions.filter(x=>x.unit_id===u.id&&isLate(x));
+  if(late.length) out.follow.push({topic:`مناقشة القرارات المتأخرة عن موعد تنفيذها (${late.length} ${late.length>10||late.length<3?"قرار":"قرارات"})`,task:"",discussion:late.map((x,k)=>`${k+1}. ${x.text} (المسؤول: ${x.owner||"—"}، الموعد: ${fmtHs(x.due_date)})`).join("\n")});
+  const gen=[];
+  gen.push(["s",-1,`اعتماد خطة عمل ${kw} للفصل الدراسي وتوزيع المهام على الأعضاء`]);
+  gen.push(["m",-1,`مراجعة مؤشرات أداء ${kw} للفصل الدراسي الحالي`]);
+  const rep=findTask(/التقرير الفصلي/); gen.push(["e",rep,`مناقشة التقرير الفصلي لأعمال ${kw} واعتماده`]);
+  const ref=findTask(/ما يحال/); gen.push(["a",ref,`دراسة ما يحال إلى ${kw} من جهات الاختصاص`]);
+  [...(TOPIC_BANK[u.id]||[]),...gen].filter(x=>x[0]===phase||x[0]==="a").forEach(([ph,t,topic])=>{
+    topic=topic.replace("{year}",year); if(!have.has(normAr(topic))) out.bank.push({topic,task:t>=0&&t<u.tasks.length?t:"",discussion:"",phase:ph}); });
+  const covered=new Set(); S.minutes.filter(m=>m.unit_id===u.id&&m.year===year).forEach(m=>(m.items||[]).forEach(it=>{ if(it.task!==""&&it.task!=null) covered.add(+it.task); }));
+  d.items.forEach(it=>{ if(it.task!==""&&it.task!=null) covered.add(+it.task); });
+  u.tasks.forEach((t,i)=>{ if(!covered.has(i) && !/ما يحال|التقرير الفصلي|الخطة الاستراتيجية والتقرير السنوي/.test(t)) out.tasks.push({topic:t.replace(/\.$/,""),task:i,discussion:""}); });
+  return out;
+}
+function suggestModal(){
+  const d=S.draft, u=unitById(d.unit_id); let phase=defaultPhase(d.meeting_date); let pool=[];
+  const draw=()=>{
+    const g=suggestionsFor(u,d,phase); pool=[...g.follow,...g.bank,...g.tasks];
+    let k=0; const sec=(title,list,hint)=>list.length?`<div class="sg-sec"><div class="sg-title">${title}${hint?` <span class="hint">${hint}</span>`:""}</div>${list.map(x=>`<label class="sg-row"><input type="checkbox" data-sg="${k++}" ${list===g.follow?"checked":""}><span>${esc(x.topic)}${x.task!==""?`<small>مرتبط بالمهمة ${+x.task+1}</small>`:""}</span></label>`).join("")}</div>`:"";
+    $("#sg-body").innerHTML=sec("متابعة",g.follow,"من المحاضر السابقة")+sec(`موضوعات مقترحة ل${PHASES[phase]}`,g.bank)+sec(`مهام ${kindWord(u)} التي لم تُناقش في محاضر ${S.settings.year||"1448"}هـ`,g.tasks)||`<div class="empty">لا توجد اقتراحات إضافية.</div>`;
+    document.querySelectorAll("#sg-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.ph===phase));
+  };
+  modal(`<h3>موضوعات مقترحة لاجتماع ${esc(u.name)}</h3><div>
+    <div class="seg" id="sg-tabs" style="margin-bottom:10px">${Object.entries(PHASES).map(([k,v])=>`<button type="button" data-ph="${k}">${v}</button>`).join("")}</div>
+    <div id="sg-body" style="max-height:52vh;overflow:auto"></div>
+    <div class="acts"><button class="btn primary" id="sg-add">إضافة المحدد إلى جدول الأعمال</button><button class="btn" data-close>إغلاق</button></div></div>`);
+  $(".modal").style.maxWidth="720px";
+  $("#sg-tabs").onclick=e=>{ const b=e.target.closest("button"); if(b){ phase=b.dataset.ph; draw(); } };
+  $("#sg-add").onclick=()=>{
+    const picked=[...document.querySelectorAll("#sg-body [data-sg]:checked")].map(x=>pool[+x.dataset.sg]);
+    if(!picked.length) return toast("اختر موضوعًا واحدًا على الأقل");
+    if(d.items.length===1 && !d.items[0].topic.trim() && !(d.items[0].discussion||"").trim() && !(d.items[0].decisions||[]).length) d.items=[];
+    picked.forEach(x=>d.items.push({id:uuid(),topic:x.topic,task:x.task,discussion:x.discussion||"",decisions:[]}));
+    closeModal(); toast(`أُضيف ${picked.length} ${picked.length>10||picked.length<3?"موضوع":"موضوعات"} إلى جدول الأعمال`); render();
+  };
+  draw();
+}
+
 /* ---------------- Hijri dates (Umm al-Qura) ---------------- */
 const HMONTHS=["محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
 const _hf=new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{day:"numeric",month:"numeric",year:"numeric",timeZone:"UTC"});
@@ -1242,14 +1320,19 @@ Object.assign(SupaStore,{
 
 function fixArabicPdf(t){
   t=String(t||"").normalize("NFKC");
-  const S='(^|[\\s(«"\'،.:؛\\-/])';
-  t=t.replace(new RegExp(S+"(و?)ا([مجحخ])ل","g"),"$1$2ال$3");
-  t=t.replace(new RegExp(S+"(و?)اال","g"),"$1$2الا");
+  const S='(^|[\\s(«"\'،.:؛\\-/])', A='[\\u0621-\\u064A]';
+  t=t.replace(new RegExp(S+"([وبل]?)ا([مجحخ])ل","g"),"$1$2ال$3");
+  t=t.replace(new RegExp(S+"([وبل]?)ا([أإآ])ل","g"),"$1$2ال$3");
+  t=t.replace(new RegExp(S+"([وبل]?)اال","g"),"$1$2الا");
   t=t.replace(new RegExp(S+"([وبل]?)حم(ضر|اضر|مد|دد|ددة|ور|اور|ارب|افظة)(?=$|[^\\u0621-\\u064A])","g"),"$1$2مح$3");
+  const W=[["اطالع","اطلاع"],["إطالع","إطلاع"],["خالل","خلال"],["عالقة","علاقة"],["عالقات","علاقات"],["صالحي","صلاحي"],["إعالن","إعلان"],["اعالن","اعلان"],
+    ["مالحظ","ملاحظ"],["استالم","استلام"],["إسالم","إسلام"],["عالج","علاج"],["الئحة","لائحة"],["أخالق","أخلاق"],["اخالق","اخلاق"],["انطالق","انطلاق"],
+    ["إطالق","إطلاق"],["اطالق","اطلاق"],["إخالل","إخلال"],["اخالل","اخلال"],["إالكتروني","إلكتروني"],["الالزم","اللازم"],["االزمة","اللازمة"]];
+  for(const [a,b] of W) t=t.split(a).join(b);
+  t=t.replace(new RegExp("(?<="+A+"{2})االت(?="+"$|[^\\u0621-\\u064A])","g"),"الات");
+  t=t.replace(new RegExp("(?<="+A+"{3})([^ا\\s])الت(?=$|[^\\u0621-\\u064A])","g"),"$1لات");
   return t;
 }
-const s="جدول أعمال اجللسة: م املوضوع املصدر 1 . االطالع على اعتماد سعادة رئيس اجلامعة حمضر اجتماع اجللسة السابقة. 2 . االطالع على قائمة برامج الكلية املقترح القبول عليها للعام اجلامعي 144 5 هـ 3 . االطالع على أعداد الطالب والطالبات املقترح قبولهم للعام اجلامعي 1445 هـ. كامل حماية اجل";
-console.log(fixArabicPdf(s));
 async function repairArchiveTexts(btn){
   if(!confirm("تحسين نصوص كل الملفات المؤرشفة لتحسين نتائج البحث؟ قد يستغرق ذلك دقيقة.")) return;
   btn.disabled=true; let n=0, ch=0;
@@ -1276,19 +1359,47 @@ function archiveFilters(lockUnit){
     <select data-arch-f="year"><option value="">كل الأعوام</option>${ARCH_YEARS.map(y=>`<option ${AR.year===y?"selected":""}>${y}</option>`).join("")}</select>
     <button class="btn primary" data-arch="search">بحث</button></div>`;
 }
+function topicFromText(text,q){
+  const t=fixArabicPdf(text||"").replace(/[ \t]+/g," ");
+  const m=arRegex(q).exec(t); if(!m) return {topic:"",snip:snippet(t,q,90)};
+  const back=t.lastIndexOf("الموضوع",m.index);
+  let topic="";
+  if(back>=0 && m.index-back<900){ let e=t.indexOf("\n",back); if(e<0||e-back>220) e=Math.min(t.length,back+200); topic=t.slice(back,e).replace(/\s+/g," ").trim(); }
+  return {topic, snip:snippet(t,q,90)};
+}
+function buildResultRows(){
+  if(!AR.results) return [];
+  const rows=[];
+  AR.results.plat.forEach(m=>{
+    const ds=S.decisions.filter(d=>d.minute_id===m.id);
+    const hits=(m.items||[]).map((it,i)=>({it,i,txt:`${it.topic}\n${it.discussion||""}\n${ds.filter(d=>d.item_idx===i).map(d=>d.text).join("\n")}`})).filter(x=>matchesAll(x.txt,AR.q));
+    (hits.length?hits:[{it:(m.items||[])[0]||{topic:""},i:0,txt:minuteText(m)}]).forEach(h=>rows.push({src:"p",id:m.id,unit:m.unit_id,year:m.year,seq:m.seq,date:m.meeting_date,appr:m.approval_no,apprDate:m.approval_date,
+      topicHTML:snippet(h.it.topic,AR.q,200), subHTML:snippet(h.txt.slice((h.it.topic||"").length),AR.q,80), topicTxt:h.it.topic}));
+  });
+  AR.results.arch.forEach(r=>{
+    let topicHTML,subHTML="",topicTxt=r.title;
+    if(r.has_text){ const x=topicFromText(r.content,AR.q); topicHTML=x.topic? snippet(x.topic,AR.q,200) : esc(r.title); subHTML=x.snip; topicTxt=x.topic||r.title; }
+    else { topicHTML=esc(r.title); subHTML='<span class="muted">ملف ممسوح ضوئيًا: البحث فيه بالعنوان فقط.</span>'; }
+    rows.push({src:"a",id:r.id,unit:r.unit_id,year:r.year,seq:r.seq,date:r.meeting_date,appr:r.approval_no,apprDate:r.approval_date,topicHTML,subHTML,topicTxt});
+  });
+  rows.sort((a,b)=>String(b.year).localeCompare(String(a.year)) || String(b.date||"").localeCompare(String(a.date||"")) || (b.seq||0)-(a.seq||0));
+  AR.rows=rows; return rows;
+}
 function archiveResultsHTML(insertMode){
   if(AR.busy) return `<div class="empty">جارٍ البحث…</div>`;
   if(!AR.results) return "";
-  const {arch,plat}=AR.results;
-  if(!arch.length && !plat.length) return `<div class="empty">لا توجد نتائج لـ «${esc(AR.q)}». جرّب كلمة أقصر أو أزل تصفية العام.</div>`;
-  const row=(src,r,title,meta,snip,openAttr)=>`<div class="arch-hit">
-    <div class="arch-top"><div><span class="chip ${src==="a"?"c-new":"c-approved"}">${src==="a"?"أرشيف":"من المنصة"}</span> <b>${esc(title)}</b><div class="hint">${meta}</div></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${openAttr}${insertMode?`<button class="btn sm" data-arch-ins="${src}:${r.id}">إدراج المقتطف</button>`:""}</div></div>
-    <div class="arch-snip">${snip}</div></div>`;
-  return `<div class="hint" style="margin:6px 0 10px">${arch.length+plat.length} نتيجة</div>`+
-    plat.map(m=>row("p",m,`${unitById(m.unit_id)?.name} · محضر رقم ${m.seq}`,`${m.year}هـ · ${fmtHs(m.meeting_date)}`,snippet(minuteText(m),AR.q),`<a class="btn sm" href="#/minute/${m.id}" ${insertMode?'target="_blank"':""}>فتح</a>`)).join("")+
-    arch.map(r=>row("a",r,r.title,`${esc(unitById(r.unit_id)?.name||r.unit_id)} · ${r.year}هـ${r.seq?` · محضر ${r.seq}`:""}${r.meeting_date?" · "+fmtHs(r.meeting_date):""}${r.approval_no?` · اعتماد <span dir="ltr">${esc(r.approval_no)}</span>`:""}`,
-      r.has_text? snippet(fixArabicPdf(r.content),AR.q) : `<span class="muted">ملف ممسوح ضوئيًا: البحث فيه بالعنوان فقط.</span>`,`<button class="btn sm" data-arch-open="${r.id}">فتح الملف</button>`)).join("");
+  const rows=buildResultRows();
+  if(!rows.length) return `<div class="empty">لا توجد نتائج لـ «${esc(AR.q)}». جرّب كلمة أقصر أو أزل تصفية العام.</div>`;
+  return `<div class="res-head"><span class="hint">${rows.length} نتيجة لـ «${esc(AR.q)}»</span>${insertMode?"":`<button class="btn sm" data-arch="csv">تصدير النتائج</button>`}</div>
+  <div class="tbl-wrap"><table class="t res-t"><thead><tr><th style="min-width:300px">الموضوع</th><th>الوحدة / اللجنة</th><th>رقم المحضر</th><th>تاريخ المحضر</th><th>رقم المعاملة</th><th></th></tr></thead><tbody>
+  ${rows.map(r=>`<tr>
+    <td><div class="res-topic">${r.topicHTML||'<span class="muted">—</span>'}</div>${r.subHTML?`<div class="res-sub">${r.subHTML}</div>`:""}</td>
+    <td>${esc(unitById(r.unit)?.name||r.unit)}<div class="hint">${r.src==="a"?"أرشيف":"من المنصة"} · ${r.year}هـ</div></td>
+    <td style="text-align:center"><b>${r.seq||"—"}</b></td>
+    <td style="white-space:nowrap">${r.date?fmtHs(r.date):"—"}</td>
+    <td style="white-space:nowrap">${r.appr?`<b dir="ltr">${esc(r.appr)}</b>${r.apprDate?`<div class="hint">${fmtHs(r.apprDate)}</div>`:""}`:'<span class="muted">—</span>'}</td>
+    <td style="white-space:nowrap">${r.src==="a"?`<button class="btn sm" data-arch-open="${r.id}">فتح</button>`:`<a class="btn sm" href="#/minute/${r.id}" ${insertMode?'target="_blank"':""}>فتح</a>`}${insertMode?` <button class="btn sm" data-arch-ins="${r.src}:${r.id}">إدراج</button>`:""}</td></tr>`).join("")}
+  </tbody></table></div>`;
 }
 async function runArchiveSearch(rerender){
   AR.busy=true; rerender();
@@ -1411,7 +1522,7 @@ function editorArchiveModal(unitId){
     <div class="filters"><input type="text" class="inp" style="flex:1" id="am-q" placeholder="مثال: إعادة القيد، جداول الاختبارات، مذكرة تفاهم" value="${esc(AR.q)}"><button class="btn primary" id="am-go">بحث</button></div>
     <p class="hint">«إدراج المقتطف» يضيف النص المحيط بنتيجة البحث إلى آخر خانة كتبت فيها في المحضر.</p>
     <div id="am-res"></div></div>`);
-  $(".modal").style.maxWidth="760px";
+  $(".modal").style.maxWidth="980px";
   const rer=()=>{ const el=$("#am-res"); if(el) el.innerHTML=archiveResultsHTML(true); };
   const go=()=>{ AR.q=$("#am-q").value.trim(); AR.unit=$("#am-unit").value; AR.year=$("#am-year").value; if(!AR.q) return toast("اكتب كلمة للبحث"); runArchiveSearch(rer); };
   $("#am-go").onclick=go; $("#am-q").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } };
@@ -1438,6 +1549,8 @@ function bindArchive(){
     if(t.dataset.archSearchEditor!==undefined){ e.preventDefault(); return editorArchiveModal(t.dataset.archSearchEditor); }
     if(t.dataset.arch==="upload") return uploadModal(t.dataset.archUnit||AR.unit);
     if(t.dataset.arch==="repair") return repairArchiveTexts(t);
+    if(t.dataset.arch==="csv"){ const strip=h=>String(h||"").replace(/<[^>]+>/g,"").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+      return csvDownload(`نتائج_البحث_${AR.q.replace(/\s+/g,"_")}.csv`,[["الموضوع","الوحدة / اللجنة","المصدر","العام","رقم المحضر","تاريخ المحضر","رقم المعاملة","تاريخ الاعتماد"],...(AR.rows||[]).map(r=>[strip(r.topicHTML)||r.topicTxt,unitById(r.unit)?.name||r.unit,r.src==="a"?"أرشيف":"المنصة",r.year,r.seq||"",r.date?fmtHs(r.date):"",r.appr||"",r.apprDate?fmtHs(r.apprDate):""])]); }
     if(t.dataset.arch==="search"){ AR.q=(app.querySelector("[data-arch-q]")?.value||"").trim(); if(!AR.q){ AR.results=null; return render(); } return runArchiveSearch(rer); }
     if(t.dataset.archOpen) return archOpen(t.dataset.archOpen);
     if(t.dataset.archEdit) return archEditModal(S.archive.find(r=>r.id===t.dataset.archEdit));
