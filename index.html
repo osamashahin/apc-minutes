@@ -1237,15 +1237,18 @@ const ARCH_YEARS = ["1444","1445","1446","1447","1448"];
 const ARCH_COLS = "id,unit_id,year,semester,seq,meeting_date,title,notes,file_path,file_name,file_type,file_size,has_text,uploaded_by,created_at,approval_no,approval_date";
 function normAr(t){ return normArRaw(t).replace(/لا/g,"ال"); }
 function normArRaw(t){ return String(t||"").replace(/[\u064B-\u0652\u0670\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/\s+/g," ").trim().toLowerCase(); }
+function wordVariants(w){ const cs=[...w], v=new Set([w]); if(cs.length>=3) for(let i=0;i<cs.length-1;i++){ const c=cs.slice(); [c[i],c[i+1]]=[c[i+1],c[i]]; v.add(c.join("")); } return [...v]; }
+function tolerantPattern(w){ const esc2=c=>c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); return "("+wordVariants(w).map(v=>[...v].map(esc2).join(" ?")).join("|")+")"; }
 function arRegex(q){
   const map={"ا":"[اأإآٱ]","ه":"[هة]","ي":"[يىئ]","و":"[وؤ]"};
   const words=normAr(q).split(" ").filter(Boolean);
-  const w=words[0]||""; const gap="[\\u064B-\\u0652\\u0670\\u0640]*";
-  const parts=[]; const cs=[...w];
-  for(let i=0;i<cs.length;i++){ const c=cs[i];
-    if(c==="ا"&&cs[i+1]==="ل"){ parts.push("(?:[اأإآٱ]"+gap+"ل|ل"+gap+"[اأإآٱ])"+gap); i++; continue; }
-    parts.push((map[c]||c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))+gap); }
-  return new RegExp(parts.join(""),"i");
+  const w=words[0]||""; const gap="[\\u064B-\\u0652\\u0670\\u0640]*\\s?";
+  const one=v=>{ const parts=[]; const cs=[...v];
+    for(let i=0;i<cs.length;i++){ const c=cs[i];
+      if(c==="ا"&&cs[i+1]==="ل"){ parts.push("(?:[اأإآٱ]"+gap+"ل|ل"+gap+"[اأإآٱ])"+gap); i++; continue; }
+      parts.push((map[c]||c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))+gap); }
+    return parts.join("").replace(/\\s\?$/,""); };
+  return new RegExp("(?:"+wordVariants(w).map(one).join("|")+")","i");
 }
 function snippet(text,q,len=130){
   text=String(text||"").replace(/\s*\n\s*/g," ؛ ").replace(/\s{2,}/g," "); if(!q) return esc(text.slice(0,len*2));
@@ -1253,7 +1256,7 @@ function snippet(text,q,len=130){
   const a=Math.max(0,m.index-len), b=Math.min(text.length,m.index+m[0].length+len);
   return (a>0?"…":"")+esc(text.slice(a,m.index))+"<mark>"+esc(m[0])+"</mark>"+esc(text.slice(m.index+m[0].length,b))+(b<text.length?"…":"");
 }
-function matchesAll(text,q){ const n=normAr(text); return normAr(q).split(" ").filter(Boolean).every(w=>n.includes(w)); }
+function matchesAll(text,q){ const n=normAr(text); return normAr(q).split(" ").filter(Boolean).every(w=>n.includes(w)||new RegExp(tolerantPattern(w)).test(n)); }
 function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)) return res(); const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("تعذّر تحميل أداة قراءة الملفات")); document.head.appendChild(s); }); }
 async function extractText(file){
   const name=file.name.toLowerCase();
@@ -1303,7 +1306,7 @@ Object.assign(SupaStore,{
   async archiveSearch(q,{unit,year}={}){
     let x=this.sb.from("archive_minutes").select(ARCH_COLS+",content").limit(80);
     if(unit) x=x.eq("unit_id",unit); if(year) x=x.eq("year",year);
-    normAr(q).replace(/[%_\\,()]/g," ").split(" ").filter(Boolean).forEach(w=>{ x=x.ilike("search_text","%"+w+"%"); });
+    normAr(q).replace(/[%_\\,()|*+?.^$\[\]{}]/g," ").split(" ").filter(Boolean).forEach(w=>{ x=x.filter("search_text","imatch",tolerantPattern(w)); });
     return this.ck(await x);
   },
   async archiveGet(id){ return this.ck(await this.sb.from("archive_minutes").select("*").eq("id",id).single()); },
@@ -1436,7 +1439,7 @@ function archiveTable(rows){
   return `<table class="t"><thead><tr><th>العنوان</th><th>الوحدة / اللجنة</th><th>العام</th><th>رقم المحضر</th><th>التاريخ</th><th>رقم الاعتماد</th><th>الملف</th><th></th></tr></thead><tbody>
     ${rows.map(r=>`<tr><td><b>${esc(r.title)}</b>${r.has_text?"":'<div class="hint">ممسوح ضوئيًا</div>'}</td><td>${esc(unitById(r.unit_id)?.name||r.unit_id)}</td><td>${r.year}${r.semester?`<div class="hint">${esc(r.semester)}</div>`:""}</td><td>${r.seq||"—"}</td><td>${r.meeting_date?fmtHs(r.meeting_date):"—"}</td><td>${approvalCell(r)}</td>
       <td class="hint">${esc((r.file_name||"").slice(0,40))}<br>${r.file_size?fmtSize(r.file_size):""}</td>
-      <td style="white-space:nowrap"><button class="btn sm" data-arch-open="${r.id}">فتح</button>${canWrite(r.unit_id)?` <button class="btn sm" data-arch-edit="${r.id}">تعديل</button>`:""}${(isAdmin()||r.uploaded_by===S.user.id)?` <button class="btn sm danger" data-arch-del="${r.id}">حذف</button>`:""}</td></tr>`).join("")}
+      <td style="white-space:nowrap"><button class="btn sm" data-arch-open="${r.id}">فتح</button>${r.has_text?` <button class="btn sm" data-arch-text="${r.id}">النص</button>`:""}${canWrite(r.unit_id)?` <button class="btn sm" data-arch-edit="${r.id}">تعديل</button>`:""}${(isAdmin()||r.uploaded_by===S.user.id)?` <button class="btn sm danger" data-arch-del="${r.id}">حذف</button>`:""}</td></tr>`).join("")}
   </tbody></table>`;
 }
 function unitArchivePanel(u){
@@ -1546,7 +1549,7 @@ function bindArchive(){
   if(app._archBound) { const ed0=$("#edf"); if(ed0) ed0.addEventListener("focusin",e=>{ if(e.target.matches("textarea,input[data-ik=topic],input[data-dk]")) lastField=e.target; }); return; }
   app._archBound=true;
   app.addEventListener("click",async e=>{
-    const t=e.target.closest("[data-arch],[data-arch-open],[data-arch-edit],[data-arch-del],[data-arch-cell],[data-arch-search-editor]"); if(!t || !app.contains(t)) return;
+    const t=e.target.closest("[data-arch],[data-arch-open],[data-arch-edit],[data-arch-del],[data-arch-cell],[data-arch-search-editor],[data-arch-text]"); if(!t || !app.contains(t)) return;
     if(t.dataset.archSearchEditor!==undefined){ e.preventDefault(); return editorArchiveModal(t.dataset.archSearchEditor); }
     if(t.dataset.arch==="upload") return uploadModal(t.dataset.archUnit||AR.unit);
     if(t.dataset.arch==="repair") return repairArchiveTexts(t);
@@ -1554,6 +1557,8 @@ function bindArchive(){
       return csvDownload(`نتائج_البحث_${AR.q.replace(/\s+/g,"_")}.csv`,[["الموضوع","الوحدة / اللجنة","المصدر","العام","رقم المحضر","تاريخ المحضر","رقم المعاملة","تاريخ الاعتماد"],...(AR.rows||[]).map(r=>[strip(r.topicHTML)||r.topicTxt,unitById(r.unit)?.name||r.unit,r.src==="a"?"أرشيف":"المنصة",r.year,r.seq||"",r.date?fmtHs(r.date):"",r.appr||"",r.apprDate?fmtHs(r.apprDate):""])]); }
     if(t.dataset.arch==="search"){ AR.q=(app.querySelector("[data-arch-q]")?.value||"").trim(); if(!AR.q){ AR.results=null; return render(); } return runArchiveSearch(rer); }
     if(t.dataset.archOpen) return archOpen(t.dataset.archOpen);
+    if(t.dataset.archText){ try{ const full=await Store.archiveGet(t.dataset.archText); let txt=esc(fixArabicPdf(full?.content||"")).replace(/\n/g,"<br>");
+        modal(`<h3>النص المستخرج: ${esc(full.title)}</h3><div><p class="hint" style="margin-top:0">هذا هو النص الذي تبحث فيه المنصة. إذا وجدت كلمة مكتوبة بشكل غير صحيح أرسلها لإضافتها إلى قائمة الإصلاح.</p><div class="arch-snip" style="max-height:60vh;font-size:13.5px">${txt||'<span class="muted">لا يوجد نص.</span>'}</div><div class="acts"><button class="btn" data-close>إغلاق</button></div></div>`); $(".modal").style.maxWidth="820px"; }catch(err){ toast(err.message); } return; }
     if(t.dataset.archEdit) return archEditModal(S.archive.find(r=>r.id===t.dataset.archEdit));
     if(t.dataset.archCell){ e.preventDefault(); const [u,y]=t.dataset.archCell.split("|"); AR.unit=u; AR.year=y; AR.q=""; AR.results=null; render(); setTimeout(()=>document.querySelector(".panel.tbl-wrap")?.scrollIntoView({behavior:"smooth"}),50); return; }
     if(t.dataset.archDel){ const r=S.archive.find(x=>x.id===t.dataset.archDel); if(!confirm(`حذف «${r.title}» من الأرشيف نهائيًا؟`)) return;
