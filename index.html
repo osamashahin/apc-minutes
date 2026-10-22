@@ -269,6 +269,15 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .filters select,.filters input[type=text]{border:1px solid var(--line);border-radius:9px;padding:6px 10px;background:var(--field);min-height:36px;color:var(--ink)}
 
+.arch-hit{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.arch-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.arch-snip{font-size:13px;margin-top:6px;line-height:1.9;background:var(--head);border:1px solid var(--line-2);border-radius:7px;padding:6px 10px;max-height:180px;overflow:auto}
+mark{background:#FDE68A;color:inherit;border-radius:3px;padding:0 2px}
+.up-row{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px;background:var(--head)}
+.up-name{font-size:13px;font-weight:600;margin-bottom:6px;word-break:break-all}
+.up-grid{display:grid;grid-template-columns:2fr 90px 100px 140px;gap:6px}
+@media (max-width:600px){.up-grid{grid-template-columns:1fr 1fr}}
+.up-st{margin-top:4px}
 /* ---------- scrollbars like the training portal ---------- */
 ::-webkit-scrollbar{width:12px;height:12px}
 ::-webkit-scrollbar-track{background:#EFE9F7}
@@ -449,7 +458,7 @@ const SupaStore = {
 const Store = (SUPABASE_URL && SUPABASE_ANON_KEY) ? SupaStore : LocalStore;
 
 /* ---------------- state ---------------- */
-const S = { user:null, units:[], minutes:[], decisions:[], stats:[], settings:{}, profiles:[], access:[], view:{year:null,semester:null}, draft:null };
+const S = { archive:[], user:null, units:[], minutes:[], decisions:[], stats:[], settings:{}, profiles:[], access:[], view:{year:null,semester:null}, draft:null };
 
 async function loadAll(){
   const [units,minutes,decisions,stats,settings,profiles,access] = await Promise.all(
@@ -457,6 +466,7 @@ async function loadAll(){
   S.units = units.sort((a,b)=>a.sort-b.sort);
   S.minutes=minutes; S.decisions=decisions; S.stats=stats; S.profiles=profiles; S.access=access;
   S.settings = Object.fromEntries(settings.map(s=>[s.key,s.value]));
+  try{ S.archive = await Store.archiveList(); }catch(e){ console.warn('archive',e); S.archive=[]; }
   if(!S.view.year){ S.view.year=S.settings.year||"1448"; S.view.semester=S.settings.semester||SEMESTERS[0]; }
 }
 const isAdmin = () => S.user?.role==="admin";
@@ -513,6 +523,7 @@ function render(){
       case "unit": ({html,title,crumb}=viewUnit(a,b||"overview")); break;
       case "minute": ({html,title,crumb}= a==="new" ? viewEditor(null,b) : (b==="edit"? viewEditor(a) : viewMinute(a))); break;
       case "minutes": ({html,title}=viewMinutesAll()); break;
+      case "archive": ({html,title}=viewArchive()); break;
       case "decisions": ({html,title}=viewDecisions()); break;
       case "stats": ({html,title}=viewStats()); break;
       case "users": ({html,title}= isAdmin()? viewUsers() : viewHome()); break;
@@ -604,6 +615,7 @@ function shell(content,title,crumb,route){
         <a href="#/home" class="${route==="home"?"on":""}"><span>الرئيسية</span>${returned?`<span class="badge">${returned}</span>`:""}</a>
         <a href="#/units" class="${route==="units"||route==="unit"?"on":""}"><span>${S.user.role==="supervisor"?"وحداتي":"الوحدات واللجان"}</span></a>
         <a href="#/minutes" class="${route==="minutes"||route==="minute"?"on":""}"><span>المحاضر</span>${pend?`<span class="badge p">${pend}</span>`:""}</a>
+        <a href="#/archive" class="${route==="archive"?"on":""}"><span>أرشيف المحاضر</span>${S.archive.length?`<span class="hint">${S.archive.length}</span>`:""}</a>
         <a href="#/decisions" class="${route==="decisions"?"on":""}"><span>متابعة القرارات</span>${lateN?`<span class="badge">${lateN}</span>`:""}</a>
         <a href="#/stats" class="${route==="stats"?"on":""}"><span>الإحصائيات والمؤشرات</span></a>
         ${myU.length?`<div class="grp">وحداتي ولجاني</div>`+myU.map(u=>`<a href="#/unit/${u.id}">${esc(u.name)}</a>`).join(""):""}
@@ -689,7 +701,7 @@ function viewUnitsList(){
 function viewUnit(id,tab){
   const u=unitById(id); if(!u || !visibleUnits().includes(u)) return {title:"غير متاح",html:`<div class="empty">ليس لديك صلاحية على هذه الوحدة.</div>`};
   const s=unitSummary(u);
-  const tabs=[["overview","المهام والأعضاء"],["minutes","المحاضر"],["decisions","القرارات"],["stats","المؤشرات"]];
+  const tabs=[["overview","المهام والأعضاء"],["minutes","المحاضر"],["decisions","القرارات"],["stats","المؤشرات"],["archive","الأرشيف"]];
   let body="";
   if(tab==="overview"){
     const cnt={}; unitMinutes(u.id).forEach(m=>(m.items||[]).forEach(it=>{ if(it.task!==null&&it.task!==""&&it.task>=0) cnt[it.task]=(cnt[it.task]||0)+1; }));
@@ -705,6 +717,7 @@ function viewUnit(id,tab){
   }
   if(tab==="decisions"){ body=decisionsTable(unitDecisions(u.id).filter(d=>{const m=S.minutes.find(x=>x.id===d.minute_id); return m&&m.year===S.view.year;})); }
   if(tab==="stats") body=unitStatsPanel(u);
+  if(tab==="archive") body=unitArchivePanel(u);
   return {title:u.name, crumb:`${GROUPS[u.grp].title}${u.parent?" · "+esc(unitById(u.parent).name):""}`,
     html:`<div class="unit-head"><div class="meta">${headTitle(u)}: <b style="color:var(--ink)">${esc(supervisorOf(u))}</b> · ${u.members.length} أعضاء · آخر اجتماع: ${s.last?fmtG(s.last):"لا يوجد"}</div>
       ${canWrite(u.id)?`<a class="btn primary" href="#/minute/new/${u.id}">محضر جديد</a>`:""}</div>
@@ -790,7 +803,7 @@ function viewEditor(id,unitId){
         <div class="seg" data-att="${i}">${Object.entries(ATT).map(([k,v])=>`<button type="button" data-v="${k}" class="${a.state===k?"on":""}">${v}</button>`).join("")}</div></div>`).join("")}</div>
       <label class="f" style="margin-top:12px;margin-bottom:0"><span>حضور من خارج التشكيل (اختياري)</span><input class="inp" data-k="guests" value="${esc(d.guests||"")}" placeholder="الاسم - الصفة، مفصولة بفاصلة"></label></div>
     <div class="panel-head"><h3 style="margin:0">جدول الأعمال والقرارات</h3>
-      ${prev?`<button type="button" class="btn sm" data-act="addprev">إضافة بند متابعة قرارات المحضر رقم ${prev.seq}</button>`:""}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-arch-search-editor="${u.id}">البحث في أرشيف المحاضر</button>${prev?`<button type="button" class="btn sm" data-act="addprev">إضافة بند متابعة قرارات المحضر رقم ${prev.seq}</button>`:""}</div></div>
     ${d.items.map((it,i)=>`<div class="item"><div class="item-head"><b>البند ${i+1}</b>${d.items.length>1?`<button type="button" class="btn sm danger" data-del-item="${i}">حذف البند</button>`:""}</div>
       <label class="f"><span>الموضوع</span><input class="inp" data-i="${i}" data-ik="topic" value="${esc(it.topic)}" required></label>
       <label class="f"><span>المهمة المرتبطة من مهام ${kindWord(u)}</span><select class="inp" data-i="${i}" data-ik="task">
@@ -1024,6 +1037,266 @@ function unitModal(u){
   };
 }
 
+/* ---------------- archive of previous minutes ---------------- */
+const ARCH_YEARS = ["1444","1445","1446","1447","1448"];
+const ARCH_COLS = "id,unit_id,year,semester,seq,meeting_date,title,notes,file_path,file_name,file_type,file_size,has_text,uploaded_by,created_at";
+function normAr(t){ return String(t||"").replace(/[\u064B-\u0652\u0670\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/\s+/g," ").trim().toLowerCase(); }
+function arRegex(q){
+  const map={"ا":"[اأإآٱ]","ه":"[هة]","ي":"[يىئ]","و":"[وؤ]"};
+  const words=normAr(q).split(" ").filter(Boolean);
+  const w=words[0]||""; const gap="[\\u064B-\\u0652\\u0670\\u0640]*";
+  return new RegExp([...w].map(c=>(map[c]||c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))+gap).join(""),"i");
+}
+function snippet(text,q,len=130){
+  text=String(text||"").replace(/\s*\n\s*/g," ؛ ").replace(/\s{2,}/g," "); if(!q) return esc(text.slice(0,len*2));
+  const m=arRegex(q).exec(text); if(!m) return esc(text.slice(0,len*2))+(text.length>len*2?"…":"");
+  const a=Math.max(0,m.index-len), b=Math.min(text.length,m.index+m[0].length+len);
+  return (a>0?"…":"")+esc(text.slice(a,m.index))+"<mark>"+esc(m[0])+"</mark>"+esc(text.slice(m.index+m[0].length,b))+(b<text.length?"…":"");
+}
+function matchesAll(text,q){ const n=normAr(text); return normAr(q).split(" ").filter(Boolean).every(w=>n.includes(w)); }
+function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)) return res(); const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("تعذّر تحميل أداة قراءة الملفات")); document.head.appendChild(s); }); }
+async function extractText(file){
+  const name=file.name.toLowerCase();
+  try{
+    if(name.endsWith(".pdf")){
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise; let out=[];
+      for(let i=1;i<=Math.min(pdf.numPages,60);i++){ const c=await (await pdf.getPage(i)).getTextContent(); out.push(c.items.map(x=>x.str).join(" ")); }
+      return out.join("\n").replace(/[ \t]+/g," ").trim();
+    }
+    if(name.endsWith(".docx")){
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
+      const r=await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()}); return (r.value||"").replace(/[ \t]*\n\s*/g,"\n").trim();
+    }
+    if(name.endsWith(".txt")) return (await file.text()).trim();
+  }catch(e){ console.warn("extract",e); }
+  return "";
+}
+function guessFromName(n){
+  const base=n.replace(/\.[^.]+$/,"");
+  const y=(base.match(/14(4[4-8])/)||[])[0]||"";
+  const nums=(base.replace(/14\d\d/g," ").match(/\d{1,2}/g)||[]).map(Number);
+  return {year:y, seq:nums.length?nums[0]:"", title:base.replace(/[_]+/g," ").trim()};
+}
+const fmtSize = b => b>1048576? (b/1048576).toFixed(1)+" م.ب" : Math.max(1,Math.round(b/1024))+" ك.ب";
+
+/* storage back-ends for the archive */
+const idb = {
+  db:null,
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r=indexedDB.open("wathiq-archive",1); r.onupgradeneeded=()=>r.result.createObjectStore("files"); r.onsuccess=()=>{this.db=r.result;res(this.db);}; r.onerror=()=>rej(r.error); }); },
+  async put(k,v){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("files","readwrite"); t.objectStore("files").put(v,k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+  async get(k){ const db=await this.open(); return new Promise((res,rej)=>{ const r=db.transaction("files").objectStore("files").get(k); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  async del(k){ const db=await this.open(); return new Promise(res=>{ const t=db.transaction("files","readwrite"); t.objectStore("files").delete(k); t.oncomplete=res; t.onerror=res; }); }
+};
+Object.assign(LocalStore,{
+  async archiveList(){ return this.t("archive").map(({content,search_text,...r})=>r); },
+  async archiveSearch(q,{unit,year}={}){ return this.t("archive").filter(r=>(!unit||r.unit_id===unit)&&(!year||r.year===year)&&(!q||matchesAll(r.title+" "+(r.content||""),q))).slice(0,80); },
+  async archiveGet(id){ return this.t("archive").find(r=>r.id===id); },
+  async archiveUpload(meta,file){ try{ await idb.put(meta.file_path,file); }catch(e){ throw new Error("المتصفح لا يسمح بحفظ الملفات في الوضع التجريبي"); } const a=this.t("archive"); a.push(meta); this.w("archive",a); },
+  async archiveUrl(r){ const f=await idb.get(r.file_path); if(!f) throw new Error("الملف غير متاح في هذا المتصفح"); return URL.createObjectURL(f); },
+  async archiveUpdate(id,patch){ return this.update("archive",id,patch); },
+  async archiveDelete(r){ await idb.del(r.file_path); return this.remove("archive",r.id); }
+});
+Object.assign(SupaStore,{
+  async archiveList(){ return this.ck(await this.sb.from("archive_minutes").select(ARCH_COLS).order("year").order("seq")); },
+  async archiveSearch(q,{unit,year}={}){
+    let x=this.sb.from("archive_minutes").select(ARCH_COLS+",content").limit(80);
+    if(unit) x=x.eq("unit_id",unit); if(year) x=x.eq("year",year);
+    normAr(q).replace(/[%_\\,()]/g," ").split(" ").filter(Boolean).forEach(w=>{ x=x.ilike("search_text","%"+w+"%"); });
+    return this.ck(await x);
+  },
+  async archiveGet(id){ return this.ck(await this.sb.from("archive_minutes").select("*").eq("id",id).single()); },
+  async archiveUpload(meta,file){
+    const up=await this.sb.storage.from("archive").upload(meta.file_path,file,{contentType:file.type||"application/octet-stream",upsert:false});
+    if(up.error) throw new Error(up.error.message);
+    const r=await this.sb.from("archive_minutes").insert(meta);
+    if(r.error){ await this.sb.storage.from("archive").remove([meta.file_path]); throw new Error(r.error.message); }
+  },
+  async archiveUrl(r){ const {data,error}=await this.sb.storage.from("archive").createSignedUrl(r.file_path,600); if(error) throw new Error(error.message); return data.signedUrl; },
+  async archiveUpdate(id,patch){ this.ck(await this.sb.from("archive_minutes").update(patch).eq("id",id)); },
+  async archiveDelete(r){ await this.sb.storage.from("archive").remove([r.file_path]); this.ck(await this.sb.from("archive_minutes").delete().eq("id",r.id)); }
+});
+
+/* platform minutes as searchable text */
+function minuteText(m){ const u=unitById(m.unit_id); const ds=S.decisions.filter(d=>d.minute_id===m.id);
+  return (m.items||[]).map((it,i)=>`${it.topic}\n${it.discussion||""}\n${ds.filter(d=>d.item_idx===i).map(d=>"قرار: "+d.text).join("\n")}`).join("\n\n"); }
+
+const AR = { q:"", unit:"", year:"", results:null, busy:false };
+function archiveFilters(lockUnit){
+  const units=visibleUnits();
+  return `<div class="filters" style="width:100%">
+    <input type="text" class="inp" style="flex:1;min-width:220px" data-arch-q placeholder="ابحث في نصوص المحاضر: موضوع، قرار، اسم، رقم…" value="${esc(AR.q)}">
+    ${lockUnit?"":`<select data-arch-f="unit"><option value="">كل الوحدات واللجان</option>${units.map(u=>`<option value="${u.id}" ${AR.unit===u.id?"selected":""}>${esc(u.name)}</option>`).join("")}</select>`}
+    <select data-arch-f="year"><option value="">كل الأعوام</option>${ARCH_YEARS.map(y=>`<option ${AR.year===y?"selected":""}>${y}</option>`).join("")}</select>
+    <button class="btn primary" data-arch="search">بحث</button></div>`;
+}
+function archiveResultsHTML(insertMode){
+  if(AR.busy) return `<div class="empty">جارٍ البحث…</div>`;
+  if(!AR.results) return "";
+  const {arch,plat}=AR.results;
+  if(!arch.length && !plat.length) return `<div class="empty">لا توجد نتائج لـ «${esc(AR.q)}». جرّب كلمة أقصر أو أزل تصفية العام.</div>`;
+  const row=(src,r,title,meta,snip,openAttr)=>`<div class="arch-hit">
+    <div class="arch-top"><div><span class="chip ${src==="a"?"c-new":"c-approved"}">${src==="a"?"أرشيف":"من المنصة"}</span> <b>${esc(title)}</b><div class="hint">${meta}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${openAttr}${insertMode?`<button class="btn sm" data-arch-ins="${src}:${r.id}">إدراج المقتطف</button>`:""}</div></div>
+    <div class="arch-snip">${snip}</div></div>`;
+  return `<div class="hint" style="margin:6px 0 10px">${arch.length+plat.length} نتيجة</div>`+
+    plat.map(m=>row("p",m,`${unitById(m.unit_id)?.name} · محضر رقم ${m.seq}`,`${m.year}هـ · ${fmtG(m.meeting_date)}`,snippet(minuteText(m),AR.q),`<a class="btn sm" href="#/minute/${m.id}" ${insertMode?'target="_blank"':""}>فتح</a>`)).join("")+
+    arch.map(r=>row("a",r,r.title,`${esc(unitById(r.unit_id)?.name||r.unit_id)} · ${r.year}هـ${r.seq?` · محضر ${r.seq}`:""}${r.meeting_date?" · "+fmtG(r.meeting_date):""}`,
+      r.has_text? snippet(r.content,AR.q) : `<span class="muted">ملف ممسوح ضوئيًا: البحث فيه بالعنوان فقط.</span>`,`<button class="btn sm" data-arch-open="${r.id}">فتح الملف</button>`)).join("");
+}
+async function runArchiveSearch(rerender){
+  AR.busy=true; rerender();
+  try{
+    const allowed=new Set(visibleUnits().map(u=>u.id));
+    const arch=(await Store.archiveSearch(AR.q,{unit:AR.unit,year:AR.year})).filter(r=>allowed.has(r.unit_id));
+    const plat=AR.q? S.minutes.filter(m=>allowed.has(m.unit_id)&&(!AR.unit||m.unit_id===AR.unit)&&(!AR.year||m.year===AR.year)&&matchesAll(minuteText(m),AR.q)) : [];
+    AR.results={arch,plat};
+  }catch(e){ AR.results=null; toast("تعذّر البحث: "+e.message); }
+  AR.busy=false; rerender();
+}
+function viewArchive(){
+  const units=visibleUnits(); const A=S.archive.filter(r=>units.some(u=>u.id===r.unit_id));
+  const cnt={}; A.forEach(r=>{ cnt[r.unit_id+"|"+r.year]=(cnt[r.unit_id+"|"+r.year]||0)+1; });
+  const plat={}; S.minutes.forEach(m=>{ plat[m.unit_id+"|"+m.year]=(plat[m.unit_id+"|"+m.year]||0)+1; });
+  const canUp=units.some(u=>canWrite(u.id));
+  let list="";
+  if(!AR.q && (AR.unit||AR.year)){
+    const rows=A.filter(r=>(!AR.unit||r.unit_id===AR.unit)&&(!AR.year||r.year===AR.year)).sort((a,b)=>(a.unit_id+a.year+String(a.seq||0).padStart(3,"0")).localeCompare(b.unit_id+b.year+String(b.seq||0).padStart(3,"0")));
+    list=`<div class="panel tbl-wrap"><div class="panel-head"><h3>المحاضر المؤرشفة (${rows.length})</h3></div>${archiveTable(rows)}</div>`;
+  }
+  return {title:"أرشيف المحاضر", html:`
+    <div class="panel"><div class="panel-head"><h3>البحث في المحاضر السابقة والحالية</h3>${canUp?`<button class="btn primary" data-arch="upload">رفع محاضر سابقة</button>`:""}</div>
+      ${archiveFilters(false)}<div id="arch-res">${archiveResultsHTML(false)}</div></div>
+    ${list}
+    <div class="panel tbl-wrap"><div class="panel-head"><h3>عدد المحاضر المؤرشفة لكل وحدة ولجنة حسب العام</h3><span class="hint">اضغط أي رقم لعرض محاضره</span></div>
+      <table class="t"><thead><tr><th>الوحدة / اللجنة</th>${ARCH_YEARS.map(y=>`<th style="text-align:center">${y}</th>`).join("")}<th style="text-align:center">الإجمالي</th></tr></thead><tbody>
+      ${units.map(u=>{ let tot=0; return `<tr><td>${esc(u.name)}</td>${ARCH_YEARS.map(y=>{ const c=cnt[u.id+"|"+y]||0, p=plat[u.id+"|"+y]||0; tot+=c; return `<td style="text-align:center">${c?`<a href="#" data-arch-cell="${u.id}|${y}"><b>${c}</b></a>`:'<span class="muted">—</span>'}${p?`<div class="hint" title="محاضر مكتوبة على المنصة">+${p} منصة</div>`:""}</td>`; }).join("")}<td style="text-align:center"><b>${tot||"—"}</b></td></tr>`; }).join("")}
+      </tbody></table></div>`};
+}
+function archiveTable(rows){
+  if(!rows.length) return `<div class="empty">لا توجد محاضر مؤرشفة هنا بعد.</div>`;
+  return `<table class="t"><thead><tr><th>العنوان</th><th>الوحدة / اللجنة</th><th>العام</th><th>رقم المحضر</th><th>التاريخ</th><th>الملف</th><th></th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td><b>${esc(r.title)}</b>${r.has_text?"":'<div class="hint">ممسوح ضوئيًا</div>'}</td><td>${esc(unitById(r.unit_id)?.name||r.unit_id)}</td><td>${r.year}${r.semester?`<div class="hint">${esc(r.semester)}</div>`:""}</td><td>${r.seq||"—"}</td><td>${r.meeting_date?fmtG(r.meeting_date):"—"}</td>
+      <td class="hint">${esc((r.file_name||"").slice(0,40))}<br>${r.file_size?fmtSize(r.file_size):""}</td>
+      <td style="white-space:nowrap"><button class="btn sm" data-arch-open="${r.id}">فتح</button>${canWrite(r.unit_id)?` <button class="btn sm" data-arch-edit="${r.id}">تعديل</button>`:""}${(isAdmin()||r.uploaded_by===S.user.id)?` <button class="btn sm danger" data-arch-del="${r.id}">حذف</button>`:""}</td></tr>`).join("")}
+  </tbody></table>`;
+}
+function unitArchivePanel(u){
+  const rows=S.archive.filter(r=>r.unit_id===u.id).sort((a,b)=>(b.year+String(b.seq||0).padStart(3,"0")).localeCompare(a.year+String(a.seq||0).padStart(3,"0")));
+  return `<div class="panel tbl-wrap"><div class="panel-head"><h3>محاضر ${kindWord(u)} السابقة (${rows.length})</h3>${canWrite(u.id)?`<button class="btn primary" data-arch="upload" data-arch-unit="${u.id}">رفع محاضر سابقة</button>`:""}</div>${archiveTable(rows)}</div>`;
+}
+function uploadModal(presetUnit){
+  const units=visibleUnits().filter(u=>canWrite(u.id));
+  modal(`<h3>رفع محاضر سابقة</h3><form id="upf">
+    <p class="hint" style="margin-top:0">اختر الوحدة والعام ثم الملفات (PDF أو Word أو صور). يمكنك اختيار عدة ملفات معًا، وتُستخرج نصوصها تلقائيًا لتصبح قابلة للبحث.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+      <label class="f" style="grid-column:1/-1"><span>الوحدة / اللجنة</span><select class="inp" name="unit">${units.map(u=>`<option value="${u.id}" ${u.id===presetUnit?"selected":""}>${esc(u.name)}</option>`).join("")}</select></label>
+      <label class="f"><span>العام الجامعي</span><select class="inp" name="year"><option value="">من اسم الملف</option>${ARCH_YEARS.map(y=>`<option>${y}</option>`).join("")}</select></label>
+      <label class="f"><span>الفصل الدراسي</span><select class="inp" name="semester"><option value="">غير محدد</option>${SEMESTERS.map(s=>`<option>${s}</option>`).join("")}</select></label>
+    </div>
+    <label class="f"><span>الملفات</span><input class="inp" type="file" name="files" multiple accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.txt"></label>
+    <div id="up-rows"></div>
+    <div class="acts"><button class="btn primary" id="up-go" disabled>رفع الملفات</button><button type="button" class="btn" data-close>إغلاق</button></div></form>`);
+  const f=$("#upf"); let files=[];
+  const rowsHTML=()=>files.map((x,i)=>`<div class="up-row" data-up="${i}"><div class="up-name">${esc(x.file.name)} <span class="hint">${fmtSize(x.file.size)}</span></div>
+    <div class="up-grid"><input class="inp" data-uk="title" value="${esc(x.title)}" placeholder="عنوان المحضر">
+      <input class="inp" data-uk="seq" type="number" min="1" value="${x.seq}" placeholder="رقم المحضر">
+      <select class="inp" data-uk="year"><option value="">العام</option>${ARCH_YEARS.map(y=>`<option ${x.year===y?"selected":""}>${y}</option>`).join("")}</select>
+      <input class="inp" data-uk="meeting_date" type="date" value="${x.meeting_date||""}" title="تاريخ الاجتماع (اختياري)"></div>
+    <div class="up-st hint">${x.st||""}</div></div>`).join("");
+  f.files.onchange=()=>{ const y=f.year.value; files=[...f.files.files].map(file=>{ const g=guessFromName(file.name); return {file,title:g.title,seq:g.seq,year:y||g.year,meeting_date:"",st:""}; });
+    $("#up-rows").innerHTML=rowsHTML(); $("#up-go").disabled=!files.length; $("#up-go").textContent=`رفع ${files.length} ${files.length>10||files.length<3?"ملف":"ملفات"}`; };
+  f.year.onchange=()=>{ if(f.year.value){ files.forEach(x=>x.year=f.year.value); $("#up-rows").innerHTML=rowsHTML(); } };
+  $("#up-rows").addEventListener("input",e=>{ const r=e.target.closest("[data-up]"); if(!r) return; files[r.dataset.up][e.target.dataset.uk]=e.target.value; });
+  f.onsubmit=async e=>{ e.preventDefault();
+    if(files.some(x=>!x.year)) return toast("حدّد العام لكل ملف");
+    if(files.some(x=>x.file.size>25*1048576)) return toast("الحد الأقصى لحجم الملف 25 م.ب");
+    const btn=$("#up-go"); btn.disabled=true; let ok=0;
+    for(const [i,x] of files.entries()){
+      if(x.done) continue; const st=document.querySelector(`[data-up="${i}"] .up-st`);
+      try{
+        st.textContent="جارٍ استخراج النص…"; const content=await extractText(x.file); const has=content.replace(/\s/g,"").length>=40;
+        st.textContent="جارٍ الرفع…";
+        const ext=(x.file.name.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"");
+        const id=uuid(); const unit=f.unit.value;
+        await Store.archiveUpload({id,unit_id:unit,year:x.year,semester:f.semester.value||null,seq:x.seq?+x.seq:null,meeting_date:x.meeting_date||null,title:(x.title||x.file.name).trim(),notes:null,
+          file_path:`${unit}/${x.year}/${id}.${ext}`,file_name:x.file.name,file_type:x.file.type||ext,file_size:x.file.size,content:has?content:null,search_text:normAr((x.title||"")+" "+(has?content:"")),has_text:has,uploaded_by:S.user.id,created_at:new Date().toISOString()},x.file);
+        x.done=true; ok++; st.innerHTML=`<span style="color:var(--ok)">✓ تم${has?"، والنص قابل للبحث":"، ملف ممسوح ضوئيًا (البحث بالعنوان)"}</span>`;
+      }catch(err){ st.innerHTML=`<span style="color:var(--late)">✕ ${esc(err.message)}</span>`; }
+    }
+    S.archive=await Store.archiveList(); btn.disabled=false; btn.textContent="إعادة المحاولة للملفات المتبقية";
+    toast(`رُفع ${ok} من ${files.length}`); if(ok===files.length){ closeModal(); render(); }
+  };
+}
+function archEditModal(r){
+  modal(`<h3>تعديل بيانات المحضر المؤرشف</h3><form id="aef">
+    <label class="f"><span>العنوان</span><input class="inp" name="title" value="${esc(r.title)}" required></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+      <label class="f" style="grid-column:1/-1"><span>الوحدة / اللجنة</span><select class="inp" name="unit">${visibleUnits().filter(u=>canWrite(u.id)).map(u=>`<option value="${u.id}" ${u.id===r.unit_id?"selected":""}>${esc(u.name)}</option>`).join("")}</select></label>
+      <label class="f"><span>العام</span><select class="inp" name="year">${ARCH_YEARS.map(y=>`<option ${r.year===y?"selected":""}>${y}</option>`).join("")}</select></label>
+      <label class="f"><span>الفصل</span><select class="inp" name="semester"><option value="">غير محدد</option>${SEMESTERS.map(s=>`<option ${r.semester===s?"selected":""}>${s}</option>`).join("")}</select></label>
+      <label class="f"><span>رقم المحضر</span><input class="inp" type="number" min="1" name="seq" value="${r.seq||""}"></label>
+      <label class="f"><span>تاريخ الاجتماع</span><input class="inp" type="date" name="meeting_date" value="${r.meeting_date||""}"></label></div>
+    <label class="f"><span>ملاحظات</span><textarea class="inp" name="notes">${esc(r.notes||"")}</textarea></label>
+    <div class="acts"><button class="btn primary">حفظ</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
+  $("#aef").onsubmit=async e=>{ e.preventDefault(); const f=e.target;
+    try{ const full=await Store.archiveGet(r.id);
+      await Store.archiveUpdate(r.id,{title:f.title.value.trim(),unit_id:f.unit.value,year:f.year.value,semester:f.semester.value||null,seq:f.seq.value?+f.seq.value:null,meeting_date:f.meeting_date.value||null,notes:f.notes.value||null,search_text:normAr(f.title.value+" "+(full?.content||""))});
+      S.archive=await Store.archiveList(); closeModal(); toast("حُفظت البيانات"); render(); }catch(err){ toast(err.message); } };
+}
+async function archOpen(id){
+  const r=S.archive.find(x=>x.id===id); if(!r) return;
+  const w=window.open("","_blank");
+  try{ const url=await Store.archiveUrl(r); if(w) w.location=url; else location.href=url; }catch(e){ if(w) w.close(); toast(e.message); }
+}
+/* search modal used inside the minute editor */
+let lastField=null;
+function editorArchiveModal(unitId){
+  AR.unit=unitId; AR.results=null;
+  modal(`<h3>البحث في أرشيف المحاضر</h3><div style="padding-bottom:4px">
+    <div class="filters" style="margin-bottom:8px"><select data-arch-f="unit" id="am-unit"><option value="">كل الوحدات واللجان</option>${visibleUnits().map(u=>`<option value="${u.id}" ${AR.unit===u.id?"selected":""}>${esc(u.name)}</option>`).join("")}</select>
+      <select data-arch-f="year" id="am-year"><option value="">كل الأعوام</option>${ARCH_YEARS.map(y=>`<option ${AR.year===y?"selected":""}>${y}</option>`).join("")}</select></div>
+    <div class="filters"><input type="text" class="inp" style="flex:1" id="am-q" placeholder="مثال: إعادة القيد، جداول الاختبارات، مذكرة تفاهم" value="${esc(AR.q)}"><button class="btn primary" id="am-go">بحث</button></div>
+    <p class="hint">«إدراج المقتطف» يضيف النص المحيط بنتيجة البحث إلى آخر خانة كتبت فيها في المحضر.</p>
+    <div id="am-res"></div></div>`);
+  $(".modal").style.maxWidth="760px";
+  const rer=()=>{ const el=$("#am-res"); if(el) el.innerHTML=archiveResultsHTML(true); };
+  const go=()=>{ AR.q=$("#am-q").value.trim(); AR.unit=$("#am-unit").value; AR.year=$("#am-year").value; if(!AR.q) return toast("اكتب كلمة للبحث"); runArchiveSearch(rer); };
+  $("#am-go").onclick=go; $("#am-q").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  $("#am-res").onclick=async e=>{
+    const o=e.target.closest("[data-arch-open]"); if(o) return archOpen(o.dataset.archOpen);
+    const b=e.target.closest("[data-arch-ins]"); if(!b) return;
+    const [src,id]=b.dataset.archIns.split(":");
+    const text= (src==="a" ? (AR.results.arch.find(r=>r.id===id)?.content||"") : minuteText(S.minutes.find(m=>m.id===id))).replace(/[ \t]*\n\s*/g,"\n");
+    const m=arRegex(AR.q).exec(text); const a=m?Math.max(0,text.lastIndexOf("\n",m.index)+1):0; let end=m?text.indexOf("\n",m.index+m[0].length):300; if(end<0) end=text.length;
+    let piece=text.slice(a,Math.min(end,a+600)).trim();
+    if(!lastField || !document.body.contains(lastField)) return navigator.clipboard?.writeText(piece).then(()=>toast("نُسخ المقتطف، الصقه في المكان المناسب"));
+    lastField.value=(lastField.value?lastField.value.trimEnd()+"\n":"")+piece; lastField.dispatchEvent(new Event("input",{bubbles:true})); toast("أُدرج المقتطف");
+  };
+}
+function bindArchive(){
+  const app=$("#app");
+  const rer=()=>{ const el=$("#arch-res"); if(el) el.innerHTML=archiveResultsHTML(false); };
+  const q=app.querySelector("[data-arch-q]");
+  if(q) q.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); AR.q=q.value.trim(); AR.q? runArchiveSearch(rer) : (AR.results=null, render()); } };
+  if(app._archBound) { const ed0=$("#edf"); if(ed0) ed0.addEventListener("focusin",e=>{ if(e.target.matches("textarea,input[data-ik=topic],input[data-dk]")) lastField=e.target; }); return; }
+  app._archBound=true;
+  app.addEventListener("click",async e=>{
+    const t=e.target.closest("[data-arch],[data-arch-open],[data-arch-edit],[data-arch-del],[data-arch-cell],[data-arch-search-editor]"); if(!t || !app.contains(t)) return;
+    if(t.dataset.archSearchEditor!==undefined){ e.preventDefault(); return editorArchiveModal(t.dataset.archSearchEditor); }
+    if(t.dataset.arch==="upload") return uploadModal(t.dataset.archUnit||AR.unit);
+    if(t.dataset.arch==="search"){ AR.q=(app.querySelector("[data-arch-q]")?.value||"").trim(); if(!AR.q){ AR.results=null; return render(); } return runArchiveSearch(rer); }
+    if(t.dataset.archOpen) return archOpen(t.dataset.archOpen);
+    if(t.dataset.archEdit) return archEditModal(S.archive.find(r=>r.id===t.dataset.archEdit));
+    if(t.dataset.archCell){ e.preventDefault(); const [u,y]=t.dataset.archCell.split("|"); AR.unit=u; AR.year=y; AR.q=""; AR.results=null; render(); setTimeout(()=>document.querySelector(".panel.tbl-wrap")?.scrollIntoView({behavior:"smooth"}),50); return; }
+    if(t.dataset.archDel){ const r=S.archive.find(x=>x.id===t.dataset.archDel); if(!confirm(`حذف «${r.title}» من الأرشيف نهائيًا؟`)) return;
+      try{ await Store.archiveDelete(r); S.archive=await Store.archiveList(); toast("حُذف من الأرشيف"); render(); }catch(err){ toast(err.message); } }
+  });
+  app.addEventListener("change",e=>{ const s=e.target.closest("[data-arch-f]"); if(!s||!app.contains(s)) return; AR[s.dataset.archF]=s.value; if(AR.q) runArchiveSearch(rer); else { AR.results=null; render(); } });
+  const ed=$("#edf"); if(ed) ed.addEventListener("focusin",e=>{ if(e.target.matches("textarea,input[data-ik=topic],input[data-dk]")) lastField=e.target; });
+}
+
 /* ---------------- modal ---------------- */
 function modal(html){ closeModal(); const o=document.createElement("div"); o.className="ov"; o.id="ov"; o.innerHTML=`<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
   o.addEventListener("click",e=>{ if(e.target===o||e.target.closest("[data-close]")) closeModal(); }); document.body.appendChild(o); o.querySelector("input,select,textarea,button")?.focus(); }
@@ -1087,6 +1360,7 @@ function afterRender(){
     try{ await Store.upsert("stats",rows,["unit_id","year","semester","key"]); await loadAll(); toast("حُفظت المؤشرات"); render(); }catch(err){ toast(err.message); } };
   const st=$("#setf"); if(st) st.onsubmit=async e=>{ e.preventDefault(); try{ await Store.upsert("settings",[{key:"year",value:st.year.value.trim()},{key:"semester",value:st.semester.value}],["key"]); await loadAll(); S.view.year=S.settings.year; S.view.semester=S.settings.semester; toast("حُفظت الإعدادات"); render(); }catch(err){ toast(err.message); } };
   bindEditor();
+  bindArchive();
 }
 
 boot();
