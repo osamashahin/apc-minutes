@@ -1157,12 +1157,17 @@ function printCards(rows){
 /* ---------------- archive of previous minutes ---------------- */
 const ARCH_YEARS = ["1444","1445","1446","1447","1448"];
 const ARCH_COLS = "id,unit_id,year,semester,seq,meeting_date,title,notes,file_path,file_name,file_type,file_size,has_text,uploaded_by,created_at,approval_no,approval_date";
-function normAr(t){ return String(t||"").replace(/[\u064B-\u0652\u0670\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/\s+/g," ").trim().toLowerCase(); }
+function normAr(t){ return normArRaw(t).replace(/لا/g,"ال"); }
+function normArRaw(t){ return String(t||"").replace(/[\u064B-\u0652\u0670\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/\s+/g," ").trim().toLowerCase(); }
 function arRegex(q){
   const map={"ا":"[اأإآٱ]","ه":"[هة]","ي":"[يىئ]","و":"[وؤ]"};
   const words=normAr(q).split(" ").filter(Boolean);
   const w=words[0]||""; const gap="[\\u064B-\\u0652\\u0670\\u0640]*";
-  return new RegExp([...w].map(c=>(map[c]||c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))+gap).join(""),"i");
+  const parts=[]; const cs=[...w];
+  for(let i=0;i<cs.length;i++){ const c=cs[i];
+    if(c==="ا"&&cs[i+1]==="ل"){ parts.push("(?:[اأإآٱ]"+gap+"ل|ل"+gap+"[اأإآٱ])"+gap); i++; continue; }
+    parts.push((map[c]||c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))+gap); }
+  return new RegExp(parts.join(""),"i");
 }
 function snippet(text,q,len=130){
   text=String(text||"").replace(/\s*\n\s*/g," ؛ ").replace(/\s{2,}/g," "); if(!q) return esc(text.slice(0,len*2));
@@ -1180,7 +1185,7 @@ async function extractText(file){
       pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
       const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise; let out=[];
       for(let i=1;i<=Math.min(pdf.numPages,60);i++){ const c=await (await pdf.getPage(i)).getTextContent(); out.push(c.items.map(x=>x.str).join(" ")); }
-      return out.join("\n").replace(/[ \t]+/g," ").trim();
+      return fixArabicPdf(out.join("\n").replace(/[ \t]+/g," ").trim());
     }
     if(name.endsWith(".docx")){
       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
@@ -1235,6 +1240,29 @@ Object.assign(SupaStore,{
   async archiveDelete(r){ await this.sb.storage.from("archive").remove([r.file_path]); this.ck(await this.sb.from("archive_minutes").delete().eq("id",r.id)); }
 });
 
+function fixArabicPdf(t){
+  t=String(t||"").normalize("NFKC");
+  const S='(^|[\\s(«"\'،.:؛\\-/])';
+  t=t.replace(new RegExp(S+"(و?)ا([مجحخ])ل","g"),"$1$2ال$3");
+  t=t.replace(new RegExp(S+"(و?)اال","g"),"$1$2الا");
+  t=t.replace(new RegExp(S+"([وبل]?)حم(ضر|اضر|مد|دد|ددة|ور|اور|ارب|افظة)(?=$|[^\\u0621-\\u064A])","g"),"$1$2مح$3");
+  return t;
+}
+const s="جدول أعمال اجللسة: م املوضوع املصدر 1 . االطالع على اعتماد سعادة رئيس اجلامعة حمضر اجتماع اجللسة السابقة. 2 . االطالع على قائمة برامج الكلية املقترح القبول عليها للعام اجلامعي 144 5 هـ 3 . االطالع على أعداد الطالب والطالبات املقترح قبولهم للعام اجلامعي 1445 هـ. كامل حماية اجل";
+console.log(fixArabicPdf(s));
+async function repairArchiveTexts(btn){
+  if(!confirm("تحسين نصوص كل الملفات المؤرشفة لتحسين نتائج البحث؟ قد يستغرق ذلك دقيقة.")) return;
+  btn.disabled=true; let n=0, ch=0;
+  for(const r of S.archive){
+    n++; btn.textContent=`جارٍ التحسين ${n} من ${S.archive.length}…`;
+    try{ const full=await Store.archiveGet(r.id); if(!full) continue;
+      const isPdf=/pdf/i.test(full.file_type||"")||/\.pdf$/i.test(full.file_name||"");
+      const content=full.content? (isPdf?fixArabicPdf(full.content):full.content) : null;
+      await Store.archiveUpdate(r.id,{content,search_text:normAr((full.title||"")+" "+(full.approval_no||"")+" "+(content||""))}); ch++;
+    }catch(e){ console.warn(e); }
+  }
+  S.archive=await Store.archiveList(); AR.results=null; toast(`تم تحسين نصوص ${ch} ملف`); render();
+}
 /* platform minutes as searchable text */
 function minuteText(m){ const u=unitById(m.unit_id); const ds=S.decisions.filter(d=>d.minute_id===m.id);
   return (m.items||[]).map((it,i)=>`${it.topic}\n${it.discussion||""}\n${ds.filter(d=>d.item_idx===i).map(d=>"قرار: "+d.text).join("\n")}`).join("\n\n"); }
@@ -1260,7 +1288,7 @@ function archiveResultsHTML(insertMode){
   return `<div class="hint" style="margin:6px 0 10px">${arch.length+plat.length} نتيجة</div>`+
     plat.map(m=>row("p",m,`${unitById(m.unit_id)?.name} · محضر رقم ${m.seq}`,`${m.year}هـ · ${fmtHs(m.meeting_date)}`,snippet(minuteText(m),AR.q),`<a class="btn sm" href="#/minute/${m.id}" ${insertMode?'target="_blank"':""}>فتح</a>`)).join("")+
     arch.map(r=>row("a",r,r.title,`${esc(unitById(r.unit_id)?.name||r.unit_id)} · ${r.year}هـ${r.seq?` · محضر ${r.seq}`:""}${r.meeting_date?" · "+fmtHs(r.meeting_date):""}${r.approval_no?` · اعتماد <span dir="ltr">${esc(r.approval_no)}</span>`:""}`,
-      r.has_text? snippet(r.content,AR.q) : `<span class="muted">ملف ممسوح ضوئيًا: البحث فيه بالعنوان فقط.</span>`,`<button class="btn sm" data-arch-open="${r.id}">فتح الملف</button>`)).join("");
+      r.has_text? snippet(fixArabicPdf(r.content),AR.q) : `<span class="muted">ملف ممسوح ضوئيًا: البحث فيه بالعنوان فقط.</span>`,`<button class="btn sm" data-arch-open="${r.id}">فتح الملف</button>`)).join("");
 }
 async function runArchiveSearch(rerender){
   AR.busy=true; rerender();
@@ -1283,7 +1311,7 @@ function viewArchive(){
     list=`<div class="panel tbl-wrap"><div class="panel-head"><h3>المحاضر المؤرشفة (${rows.length})</h3></div>${archiveTable(rows)}</div>`;
   }
   return {title:"أرشيف المحاضر", html:`
-    <div class="panel"><div class="panel-head"><h3>البحث في المحاضر السابقة والحالية</h3>${canUp?`<button class="btn primary" data-arch="upload">رفع محاضر سابقة</button>`:""}</div>
+    <div class="panel"><div class="panel-head"><h3>البحث في المحاضر السابقة والحالية</h3><div style="display:flex;gap:6px;flex-wrap:wrap">${isAdmin()&&A.length?`<button class="btn" data-arch="repair">تحسين نصوص الأرشيف</button>`:""}${canUp?`<button class="btn primary" data-arch="upload">رفع محاضر سابقة</button>`:""}</div></div>
       ${archiveFilters(false)}<div id="arch-res">${archiveResultsHTML(false)}</div></div>
     ${list}
     <div class="panel tbl-wrap"><div class="panel-head"><h3>عدد المحاضر المؤرشفة لكل وحدة ولجنة حسب العام</h3><span class="hint">اضغط أي رقم لعرض محاضره</span></div>
@@ -1409,6 +1437,7 @@ function bindArchive(){
     const t=e.target.closest("[data-arch],[data-arch-open],[data-arch-edit],[data-arch-del],[data-arch-cell],[data-arch-search-editor]"); if(!t || !app.contains(t)) return;
     if(t.dataset.archSearchEditor!==undefined){ e.preventDefault(); return editorArchiveModal(t.dataset.archSearchEditor); }
     if(t.dataset.arch==="upload") return uploadModal(t.dataset.archUnit||AR.unit);
+    if(t.dataset.arch==="repair") return repairArchiveTexts(t);
     if(t.dataset.arch==="search"){ AR.q=(app.querySelector("[data-arch-q]")?.value||"").trim(); if(!AR.q){ AR.results=null; return render(); } return runArchiveSearch(rer); }
     if(t.dataset.archOpen) return archOpen(t.dataset.archOpen);
     if(t.dataset.archEdit) return archEditModal(S.archive.find(r=>r.id===t.dataset.archEdit));
