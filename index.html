@@ -231,8 +231,11 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .item{border:1px solid var(--line);border-right:4px solid var(--jouf);border-radius:var(--radius);padding:14px 16px 6px;margin-bottom:14px;background:#fff}
 .item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .item-head b{color:var(--jouf-deep)}
-.dec-row{display:grid;grid-template-columns:1fr 200px 150px 34px;gap:8px;margin-bottom:8px;align-items:start}
+.dec-row{display:grid;grid-template-columns:1fr 190px 250px 34px;gap:8px;margin-bottom:8px;align-items:start}
 @media (max-width:800px){.dec-row{grid-template-columns:1fr 1fr}.dec-row textarea{grid-column:1/-1}}
+.hdate{display:flex;gap:4px}.hdate select.inp{min-width:0;padding:6px 6px}.hd-d{flex:0 0 62px}.hd-m{flex:1 1 112px}.hd-y{flex:0 0 76px}
+.flabel{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}.flabel b{color:var(--jouf)}
+.up-grid .flabel{font-size:11px;margin-bottom:0}
 .x{border:1px solid var(--late-line);background:var(--late-soft);border-radius:7px;height:38px;cursor:pointer;color:var(--late)}
 .sticky-actions{position:sticky;bottom:0;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;z-index:4;box-shadow:0 -6px 20px rgba(107,63,160,.08);margin-bottom:calc(env(safe-area-inset-bottom,0px))}
 
@@ -275,7 +278,7 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 mark{background:#FDE68A;color:inherit;border-radius:3px;padding:0 2px}
 .up-row{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px;background:var(--head)}
 .up-name{font-size:13px;font-weight:600;margin-bottom:6px;word-break:break-all}
-.up-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.up-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.up-grid .s2{grid-column:span 2}
 .up-grid label span{display:block;font-size:11px;color:var(--muted);font-weight:600}.up-grid .up-t{grid-column:1/-1}
 @media (max-width:600px){.up-grid{grid-template-columns:1fr 1fr}}
 .ap-prev{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--jouf-soft);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px}
@@ -685,11 +688,11 @@ function orgChart(sums){
 }
 function minuteRow(m){
   const u=unitById(m.unit_id);
-  return `<div class="list-row"><div><a class="t1" href="#/minute/${m.id}">${esc(u?.name)} · محضر رقم ${m.seq}</a><div class="t2">${fmtG(m.meeting_date)} م · ${fmtH(m.meeting_date)}</div></div><span class="chip c-${m.status}">${M_STATUS[m.status]}</span></div>`;
+  return `<div class="list-row"><div><a class="t1" href="#/minute/${m.id}">${esc(u?.name)} · محضر رقم ${m.seq}</a><div class="t2">${fmtH(m.meeting_date)}</div></div><span class="chip c-${m.status}">${M_STATUS[m.status]}</span></div>`;
 }
 function decRow(d){
   const u=unitById(d.unit_id);
-  return `<div class="list-row"><div><div class="t1">${esc(d.text)}</div><div class="t2">${esc(u?.name)}${d.owner?" · "+esc(d.owner):""}</div></div><span class="chip c-late">${fmtG(d.due_date)}</span></div>`;
+  return `<div class="list-row"><div><div class="t1">${esc(d.text)}</div><div class="t2">${esc(u?.name)}${d.owner?" · "+esc(d.owner):""}</div></div><span class="chip c-late">${fmtHs(d.due_date)}</span></div>`;
 }
 
 /* ---------------- units list ---------------- */
@@ -725,14 +728,14 @@ function viewUnit(id,tab){
   if(tab==="stats") body=unitStatsPanel(u);
   if(tab==="archive") body=unitArchivePanel(u);
   return {title:u.name, crumb:`${GROUPS[u.grp].title}${u.parent?" · "+esc(unitById(u.parent).name):""}`,
-    html:`<div class="unit-head"><div class="meta">${headTitle(u)}: <b style="color:var(--ink)">${esc(supervisorOf(u))}</b> · ${u.members.length} أعضاء · آخر اجتماع: ${s.last?fmtG(s.last):"لا يوجد"}</div>
+    html:`<div class="unit-head"><div class="meta">${headTitle(u)}: <b style="color:var(--ink)">${esc(supervisorOf(u))}</b> · ${u.members.length} أعضاء · آخر اجتماع: ${s.last?fmtHs(s.last):"لا يوجد"}</div>
       ${canWrite(u.id)?`<a class="btn primary" href="#/minute/new/${u.id}">محضر جديد</a>`:""}</div>
       <nav class="tabs">${tabs.map(([k,l])=>`<a href="#/unit/${u.id}/${k}" class="${k===tab?"on":""}">${l}</a>`).join("")}</nav>${body}`};
 }
 function minutesTable(ms,showUnit){
   return `<div class="tbl-wrap"><table class="t"><thead><tr><th>الرقم</th>${showUnit?"<th>الوحدة / اللجنة</th>":""}<th>التاريخ</th><th>الفصل</th><th>البنود</th><th>القرارات</th><th>الحالة</th><th>رقم الاعتماد</th></tr></thead><tbody>
     ${ms.map(m=>{ const ds=S.decisions.filter(d=>d.minute_id===m.id); return `<tr class="clk" data-href="#/minute/${m.id}"><td><b>${m.seq}</b><div class="hint" dir="ltr" style="text-align:right">${esc(m.ref)}</div></td>${showUnit?`<td>${esc(unitById(m.unit_id)?.name)}</td>`:""}
-      <td>${fmtG(m.meeting_date)}<div class="hint">${fmtH(m.meeting_date)}</div></td><td>${esc(m.semester)}</td><td>${(m.items||[]).length}</td><td>${ds.length}</td><td><span class="chip c-${m.status}">${M_STATUS[m.status]}</span></td><td>${approvalCell(m)}</td></tr>`; }).join("")}
+      <td>${fmtH(m.meeting_date)}<div class="hint">${weekday(m.meeting_date)}</div></td><td>${esc(m.semester)}</td><td>${(m.items||[]).length}</td><td>${ds.length}</td><td><span class="chip c-${m.status}">${M_STATUS[m.status]}</span></td><td>${approvalCell(m)}</td></tr>`; }).join("")}
   </tbody></table></div>`;
 }
 
@@ -797,7 +800,7 @@ function viewEditor(id,unitId){
     <div class="panel"><h3>بيانات الاجتماع</h3><div class="ed-grid">
       <label class="f"><span>رقم الاجتماع</span><input class="inp" type="number" min="1" data-k="seq" value="${d.seq}"></label>
       <label class="f"><span>الفصل الدراسي</span><select class="inp" data-k="semester">${SEMESTERS.map(s=>`<option ${s===d.semester?"selected":""}>${s}</option>`).join("")}</select></label>
-      <label class="f"><span>التاريخ (ميلادي)</span><input class="inp" type="date" data-k="meeting_date" value="${d.meeting_date}"></label>
+      <div class="f" style="grid-column:span 2"><span class="flabel">تاريخ الاجتماع (هجري) · <b id="hij">${weekday(d.meeting_date)}</b></span>${hijriInput('data-k="meeting_date"',d.meeting_date)}</div>
       <label class="f"><span>الموافق (هجري)</span><input class="inp" id="hij" value="${esc(weekday(d.meeting_date)+" "+fmtH(d.meeting_date))}" disabled></label>
       <label class="f"><span>وقت البدء</span><input class="inp" type="time" data-k="start_time" value="${d.start_time||""}"></label>
       <label class="f"><span>وقت الانتهاء</span><input class="inp" type="time" data-k="end_time" value="${d.end_time||""}"></label>
@@ -818,7 +821,7 @@ function viewEditor(id,unitId){
       <div class="hint" style="margin-bottom:6px">القرارات والتوصيات</div>
       ${(it.decisions||[]).map((x,j)=>`<div class="dec-row"><textarea class="inp" rows="1" style="min-height:38px" data-i="${i}" data-j="${j}" data-dk="text" placeholder="نص القرار">${esc(x.text)}</textarea>
         <input class="inp" list="mem-${u.id}" data-i="${i}" data-j="${j}" data-dk="owner" value="${esc(x.owner||"")}" placeholder="المسؤول عن التنفيذ">
-        <input class="inp" type="date" data-i="${i}" data-j="${j}" data-dk="due_date" value="${x.due_date||""}" title="موعد التنفيذ">
+        <div title="موعد التنفيذ">${hijriInput(`data-i="${i}" data-j="${j}" data-dk="due_date"`,x.due_date,{optional:true})}</div>
         <button type="button" class="x" data-del-dec="${i}:${j}" aria-label="حذف القرار">✕</button></div>`).join("")}
       <button type="button" class="btn sm" data-add-dec="${i}" style="margin-bottom:10px">إضافة قرار</button></div>`).join("")}
     <datalist id="mem-${u.id}">${u.members.map(x=>`<option value="${esc(x.name)}">`).join("")}<option value="${esc(u.name)}"></datalist>
@@ -836,7 +839,7 @@ function bindEditor(){
   attCount();
   f.addEventListener("input",e=>{
     const t=e.target;
-    if(t.dataset.k){ d[t.dataset.k]= t.type==="number"? +t.value : t.value; if(t.dataset.k==="meeting_date") $("#hij").value=weekday(t.value)+" "+fmtH(t.value); }
+    if(t.dataset.k){ d[t.dataset.k]= t.type==="number"? +t.value : t.value; if(t.dataset.k==="meeting_date"){ const h=$("#hij"); if(h) h.textContent=t.value?weekday(t.value):"حدّد التاريخ"; } }
     else if(t.dataset.dk){ d.items[t.dataset.i].decisions[t.dataset.j][t.dataset.dk]=t.value; }
     else if(t.dataset.ik){ d.items[t.dataset.i][t.dataset.ik]= t.dataset.ik==="task"? (t.value===""?"":+t.value) : t.value; }
   });
@@ -891,9 +894,9 @@ function minuteDoc(m){
   return `<article class="doc">
     <div class="doc-head"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>جامعة الجوف<br>الكلية التطبيقية</div>
       <div class="c"><img src="${LOGO.JU}" alt="جامعة الجوف" style="height:78px;width:auto"></div>
-      <div class="l">الرقم: <span dir="ltr">${esc(m.ref)}</span><br>التاريخ: ${fmtH(m.meeting_date)}<br>الموافق: ${fmtG(m.meeting_date)}م<br>${esc(m.semester)} ${esc(m.year)}هـ${m.approval_no?`<br>رقم الاعتماد: <b dir="ltr">${esc(m.approval_no)}</b>`:""}</div></div>
+      <div class="l">الرقم: <span dir="ltr">${esc(m.ref)}</span><br>التاريخ: ${fmtH(m.meeting_date)}<br>${esc(m.semester)} ${esc(m.year)}هـ${m.approval_no?`<br>رقم الاعتماد: <b dir="ltr">${esc(m.approval_no)}</b>`:""}</div></div>
     <h2>محضر الاجتماع رقم (${m.seq}) ${esc(li(u.name))}<br><span style="font-size:15px;font-weight:500">للعام الجامعي ${esc(m.year)}هـ</span></h2>
-    <p>إنه في يوم ${weekday(m.meeting_date)} الموافق ${fmtH(m.meeting_date)} (${fmtG(m.meeting_date)}م)، وفي تمام الساعة ${esc(m.start_time||"—")}، عُقد الاجتماع رقم (${m.seq}) ${esc(li(u.name))} ${m.mode==="حضوري"?"حضوريًا":m.mode==="عن بُعد"?"عن بُعد":"بشكل مدمج"} ${m.place?"في "+esc(m.place):""}، برئاسة ${esc(supervisorOf(u))}، وبحضور كلٍّ من:</p>
+    <p>إنه في يوم ${weekday(m.meeting_date)} الموافق ${fmtH(m.meeting_date)}، وفي تمام الساعة ${esc(m.start_time||"—")}، عُقد الاجتماع رقم (${m.seq}) ${esc(li(u.name))} ${m.mode==="حضوري"?"حضوريًا":m.mode==="عن بُعد"?"عن بُعد":"بشكل مدمج"} ${m.place?"في "+esc(m.place):""}، برئاسة ${esc(supervisorOf(u))}، وبحضور كلٍّ من:</p>
     <table><thead><tr><th style="width:36px">م</th><th>الاسم</th><th>الصفة</th><th>الحضور</th><th style="width:110px">التوقيع</th></tr></thead><tbody>
       ${m.attendance.map((a,i)=>`<tr><td>${i+1}</td><td>${esc(a.name)}</td><td>${esc(a.role)}</td><td>${ATT[a.state]}</td><td></td></tr>`).join("")}
       ${m.guests?`<tr><td colspan="5">بحضور: ${esc(m.guests)}</td></tr>`:""}</tbody></table>
@@ -902,10 +905,10 @@ function minuteDoc(m){
     ${m.items.map((it,i)=>{ const dd=ds.filter(x=>x.item_idx===i); return `<h4>الموضوع ${["الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر"][i]||"رقم "+(i+1)}: ${esc(it.topic)}</h4>
       ${it.task!==""&&it.task!=null&&u.tasks[it.task]?`<div style="font-size:12.5px;color:#6E6478">يندرج تحت مهمة: ${esc(u.tasks[it.task])}</div>`:""}
       ${it.discussion?`<p style="white-space:pre-line;margin:6px 0"><b>المناقشة:</b> ${esc(it.discussion)}</p>`:""}
-      ${dd.length?`<table><thead><tr><th style="width:36px">م</th><th>القرار / التوصية</th><th style="width:170px">المسؤول</th><th style="width:100px">موعد التنفيذ</th></tr></thead><tbody>${dd.map((x,k)=>`<tr><td>${k+1}</td><td>${esc(x.text)}</td><td>${esc(x.owner||"—")}</td><td>${fmtG(x.due_date)}</td></tr>`).join("")}</tbody></table>`:""}`; }).join("")}
+      ${dd.length?`<table><thead><tr><th style="width:36px">م</th><th>القرار / التوصية</th><th style="width:170px">المسؤول</th><th style="width:100px">موعد التنفيذ</th></tr></thead><tbody>${dd.map((x,k)=>`<tr><td>${k+1}</td><td>${esc(x.text)}</td><td>${esc(x.owner||"—")}</td><td>${fmtHs(x.due_date)}</td></tr>`).join("")}</tbody></table>`:""}`; }).join("")}
     <p style="margin-top:18px">وانتهى الاجتماع في تمام الساعة ${esc(m.end_time||"—")}، والله الموفق.</p>
     <div class="sig"><div>${headTitle(u)} ${kindWord(u)}<br><b>${esc(supervisorOf(u))}</b></div>
-      <div>مشرف الشؤون الأكاديمية<br>${m.status==="approved"?`<span class="stamp">معتمد</span>${m.approval_no?`<div style="font-size:12.5px;line-height:1.7;margin-top:4px">بالمعاملة رقم <b dir="ltr">${esc(m.approval_no)}</b><br>وتاريخ ${fmtH(m.approval_date)}<br>الموافق ${fmtG(m.approval_date)}م</div>`:""}${appr?`<b>${esc(appr.full_name)}</b>`:""}`:`<span class="stamp wm">${M_STATUS[m.status]}</span>`}</div></div>
+      <div>مشرف الشؤون الأكاديمية<br>${m.status==="approved"?`<span class="stamp">معتمد</span>${m.approval_no?`<div style="font-size:12.5px;line-height:1.7;margin-top:4px">بالمعاملة رقم <b dir="ltr">${esc(m.approval_no)}</b><br>وتاريخ ${fmtH(m.approval_date)}</div>`:""}${appr?`<b>${esc(appr.full_name)}</b>`:""}`:`<span class="stamp wm">${M_STATUS[m.status]}</span>`}</div></div>
   </article>`;
 }
 function viewMinute(id){
@@ -938,7 +941,7 @@ function decisionsTable(ds){
   return `<div class="panel tbl-wrap"><table class="t"><thead><tr><th>القرار</th><th>الوحدة / المحضر</th><th>المسؤول</th><th>الموعد</th><th>الحالة</th><th>ملاحظة المتابعة</th></tr></thead><tbody>
     ${ds.map(d=>{ const m=S.minutes.find(x=>x.id===d.minute_id); const u=unitById(d.unit_id); const w=canWrite(d.unit_id); return `<tr>
       <td style="min-width:240px">${esc(d.text)}</td><td><a href="#/minute/${d.minute_id}">${esc(u?.name)}<br><span class="hint">محضر ${m?m.seq:"—"}</span></a></td>
-      <td>${esc(d.owner||"—")}</td><td>${d.due_date?`<span class="chip ${isLate(d)?"c-late":""}" style="${isLate(d)?"":"padding:0"}">${fmtG(d.due_date)}</span>`:"—"}</td>
+      <td>${esc(d.owner||"—")}</td><td>${d.due_date?`<span class="chip ${isLate(d)?"c-late":""}" style="${isLate(d)?"":"padding:0"}">${fmtHs(d.due_date)}</span>`:"—"}</td>
       <td>${w?`<select class="inp" style="min-height:32px;padding:3px 8px" data-dec-status="${d.id}">${Object.entries(D_STATUS).map(([k,v])=>`<option value="${k}" ${d.status===k?"selected":""}>${v}</option>`).join("")}</select>`:`<span class="chip c-${d.status}">${D_STATUS[d.status]}</span>`}</td>
       <td style="min-width:180px">${w?`<input class="inp" style="min-height:32px;padding:3px 8px" data-dec-note="${d.id}" value="${esc(d.progress_note||"")}" placeholder="ما الذي تم؟">`:esc(d.progress_note||"—")}</td></tr>`; }).join("")}
   </tbody></table></div>`;
@@ -971,7 +974,7 @@ function viewStats(){
       <table class="t"><thead><tr><th>الوحدة / اللجنة</th><th>محاضر الفصل</th><th>معتمد</th><th>قرارات العام</th><th>نسبة التنفيذ</th><th>متأخر</th><th>تغطية المهام</th><th>آخر اجتماع</th></tr></thead><tbody>
       ${sums.map(([u,s])=>`<tr class="clk" data-href="#/unit/${u.id}/stats"><td><b>${esc(u.name)}</b></td><td>${s.minutes}</td><td>${s.approved}</td><td>${s.decisions}</td>
         <td><div style="display:flex;gap:8px;align-items:center"><div class="bar"><i style="width:${s.completion}%"></i></div><span class="hint">${s.completion}%</span></div></td>
-        <td>${s.late?`<span class="chip c-late">${s.late}</span>`:"—"}</td><td>${s.coverage}%</td><td>${s.last?fmtG(s.last):"—"}</td></tr>`).join("")}</tbody></table></div>
+        <td>${s.late?`<span class="chip c-late">${s.late}</span>`:"—"}</td><td>${s.coverage}%</td><td>${s.last?fmtHs(s.last):"—"}</td></tr>`).join("")}</tbody></table></div>
     <div class="panel"><h3>المؤشرات النوعية لكل وحدة ولجنة · ${esc(S.view.semester)} ${S.view.year}هـ</h3>
       <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${units.map(u=>`<div class="stat"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px"><b>${esc(u.name)}</b><a class="hint" href="#/unit/${u.id}/stats">تحديث</a></div>
         <table class="t" style="font-size:13px"><tbody>${u.stats.map(d=>{ const v=statVal(u.id,d.key); return `<tr><td style="padding:4px 0">${esc(d.label)}</td><td style="padding:4px 0;text-align:left;font-weight:700">${v??'<span class="muted">—</span>'}${v!=null&&d.unit==="%"?"%":""}</td></tr>`; }).join("")}</tbody></table></div>`).join("")}</div></div>`};
@@ -1045,6 +1048,39 @@ function unitModal(u){
   };
 }
 
+/* ---------------- Hijri dates (Umm al-Qura) ---------------- */
+const HMONTHS=["محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
+const _hf=new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{day:"numeric",month:"numeric",year:"numeric",timeZone:"UTC"});
+const _hp=(dt)=>{ const p=_hf.formatToParts(dt); const g=k=>+((p.find(x=>x.type===k)||{}).value); return {y:g("year"),m:g("month"),d:g("day")}; };
+function hParts(iso){ if(!iso) return null; try{ return _hp(new Date(String(iso).slice(0,10)+"T12:00:00Z")); }catch(e){ return null; } }
+let _h2g=null;
+function h2g(y,m,d){
+  if(!_h2g){ _h2g={}; const t=new Date(Date.UTC(2017,0,1,12)); const end=Date.UTC(2035,11,31,12);
+    for(;t.getTime()<=end;t.setUTCDate(t.getUTCDate()+1)){ const p=_hp(t); _h2g[`${p.y}-${p.m}-${p.d}`]=t.toISOString().slice(0,10); } }
+  return _h2g[`${+y}-${+m}-${+d}`]||null;
+}
+const hMonthLen=(y,m)=>h2g(y,m,30)?30:29;
+const pad2=n=>String(n).padStart(2,"0");
+function fmtHs(iso){ const p=hParts(iso); return p? `${p.y}/${pad2(p.m)}/${pad2(p.d)}هـ` : "—"; }
+function hijriInput(attrs,iso,opt={}){
+  const p=hParts(iso)||{}; const ys=[]; for(let y=1440;y<=1452;y++) ys.push(y); if(p.y&&!ys.includes(p.y)) ys.push(p.y);
+  const o=(v,l,sel)=>`<option value="${v}" ${sel?"selected":""}>${l}</option>`;
+  return `<span class="hdate">
+    <select class="inp hd-d" aria-label="اليوم">${opt.optional?o("","يوم",!p.d):""}${Array.from({length:30},(_,i)=>o(i+1,i+1,p.d===i+1)).join("")}</select>
+    <select class="inp hd-m" aria-label="الشهر">${opt.optional?o("","الشهر",!p.m):""}${HMONTHS.map((n,i)=>o(i+1,n,p.m===i+1)).join("")}</select>
+    <select class="inp hd-y" aria-label="السنة">${opt.optional?o("","السنة",!p.y):""}${ys.map(y=>o(y,y,p.y===y)).join("")}</select>
+    <input type="hidden" ${attrs} value="${esc(iso||"")}"></span>`;
+}
+document.addEventListener("change",e=>{
+  const s=e.target.closest&&e.target.closest(".hdate select"); if(!s) return;
+  const w=s.closest(".hdate"), hid=w.querySelector("input[type=hidden]");
+  const dS=w.querySelector(".hd-d"), mS=w.querySelector(".hd-m"), yS=w.querySelector(".hd-y");
+  if(!dS.value||!mS.value||!yS.value){ hid.value=""; }
+  else{ const len=hMonthLen(yS.value,mS.value); if(+dS.value>len){ dS.value=String(len); toast(`شهر ${HMONTHS[mS.value-1]} ${yS.value}هـ عدد أيامه ${len} يومًا`); }
+    hid.value=h2g(yS.value,mS.value,dS.value)||""; }
+  hid.dispatchEvent(new Event("input",{bubbles:true}));
+});
+
 /* ---------------- approval number & date ---------------- */
 const APPROVAL_RE=/^\d{1,6}\/\d{2}\/3$/;
 function hYear2(d){ try{ const y=new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{year:"numeric"}).format(dObj(d)); return ((y.match(/\d{4}/)||[""])[0]).slice(-2); }catch(e){ return ""; } }
@@ -1055,15 +1091,15 @@ function approvalModal(cur,onOk){
     <p class="hint" style="margin-top:0">أدخل رقم معاملة الاعتماد وتاريخها، ويُكوَّن رقم الاعتماد تلقائيًا بالصيغة: رقم المعاملة / السنة الهجرية / 3.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
       <label class="f"><span>رقم المعاملة</span><input class="inp" name="n" inputmode="numeric" required value="${esc(n0)}" dir="ltr" placeholder="1111"></label>
-      <label class="f"><span>تاريخ الاعتماد (ميلادي)</span><input class="inp" type="date" name="d" required value="${cur.approval_date||todayISO()}"></label></div>
-    <div class="ap-prev"><div><span class="hint">رقم الاعتماد</span><b dir="ltr" id="ap-no"></b></div><div><span class="hint">التاريخ الهجري</span><b id="ap-h"></b></div><div><span class="hint">الموافق</span><b id="ap-g"></b></div></div>
+      <div class="f"><span class="flabel">تاريخ الاعتماد (هجري)</span>${hijriInput('name="d"',cur.approval_date||todayISO())}</div></div>
+    <div class="ap-prev"><div><span class="hint">رقم الاعتماد</span><b dir="ltr" id="ap-no"></b></div><div><span class="hint">التاريخ الهجري</span><b id="ap-h"></b></div></div>
     <div class="acts"><button class="btn ok">اعتماد</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
   const f=$("#apf");
-  const upd=()=>{ f.n.value=f.n.value.replace(/\D/g,""); $("#ap-no").textContent=`${f.n.value||"____"}/${hYear2(f.d.value)||"__"}/3`; $("#ap-h").textContent=f.d.value?fmtH(f.d.value):"—"; $("#ap-g").textContent=f.d.value?fmtG(f.d.value)+"م":"—"; };
+  const upd=()=>{ f.n.value=f.n.value.replace(/\D/g,""); $("#ap-no").textContent=`${f.n.value||"____"}/${hYear2(f.d.value)||"__"}/3`; $("#ap-h").textContent=f.d.value?fmtH(f.d.value):"—"; };
   f.oninput=upd; upd();
   f.onsubmit=e=>{ e.preventDefault(); const no=`${f.n.value}/${hYear2(f.d.value)}/3`; if(!APPROVAL_RE.test(no)) return toast("تأكد من رقم المعاملة وتاريخ الاعتماد"); closeModal(); onOk({approval_no:no,approval_date:f.d.value}); };
 }
-const approvalCell = r => r.approval_no ? `<span dir="ltr" style="font-weight:700">${esc(r.approval_no)}</span>${r.approval_date?`<div class="hint">${fmtH(r.approval_date)}<br>${fmtG(r.approval_date)}م</div>`:""}` : '<span class="muted">—</span>';
+const approvalCell = r => r.approval_no ? `<span dir="ltr" style="font-weight:700">${esc(r.approval_no)}</span>${r.approval_date?`<div class="hint">${fmtH(r.approval_date)}</div>`:""}` : '<span class="muted">—</span>';
 
 /* ---------------- bulk unit accounts ---------------- */
 function bulkAccountsModal(){
@@ -1222,8 +1258,8 @@ function archiveResultsHTML(insertMode){
       <div style="display:flex;gap:6px;flex-wrap:wrap">${openAttr}${insertMode?`<button class="btn sm" data-arch-ins="${src}:${r.id}">إدراج المقتطف</button>`:""}</div></div>
     <div class="arch-snip">${snip}</div></div>`;
   return `<div class="hint" style="margin:6px 0 10px">${arch.length+plat.length} نتيجة</div>`+
-    plat.map(m=>row("p",m,`${unitById(m.unit_id)?.name} · محضر رقم ${m.seq}`,`${m.year}هـ · ${fmtG(m.meeting_date)}`,snippet(minuteText(m),AR.q),`<a class="btn sm" href="#/minute/${m.id}" ${insertMode?'target="_blank"':""}>فتح</a>`)).join("")+
-    arch.map(r=>row("a",r,r.title,`${esc(unitById(r.unit_id)?.name||r.unit_id)} · ${r.year}هـ${r.seq?` · محضر ${r.seq}`:""}${r.meeting_date?" · "+fmtG(r.meeting_date):""}${r.approval_no?` · اعتماد <span dir="ltr">${esc(r.approval_no)}</span>`:""}`,
+    plat.map(m=>row("p",m,`${unitById(m.unit_id)?.name} · محضر رقم ${m.seq}`,`${m.year}هـ · ${fmtHs(m.meeting_date)}`,snippet(minuteText(m),AR.q),`<a class="btn sm" href="#/minute/${m.id}" ${insertMode?'target="_blank"':""}>فتح</a>`)).join("")+
+    arch.map(r=>row("a",r,r.title,`${esc(unitById(r.unit_id)?.name||r.unit_id)} · ${r.year}هـ${r.seq?` · محضر ${r.seq}`:""}${r.meeting_date?" · "+fmtHs(r.meeting_date):""}${r.approval_no?` · اعتماد <span dir="ltr">${esc(r.approval_no)}</span>`:""}`,
       r.has_text? snippet(r.content,AR.q) : `<span class="muted">ملف ممسوح ضوئيًا: البحث فيه بالعنوان فقط.</span>`,`<button class="btn sm" data-arch-open="${r.id}">فتح الملف</button>`)).join("");
 }
 async function runArchiveSearch(rerender){
@@ -1258,7 +1294,7 @@ function viewArchive(){
 function archiveTable(rows){
   if(!rows.length) return `<div class="empty">لا توجد محاضر مؤرشفة هنا بعد.</div>`;
   return `<table class="t"><thead><tr><th>العنوان</th><th>الوحدة / اللجنة</th><th>العام</th><th>رقم المحضر</th><th>التاريخ</th><th>رقم الاعتماد</th><th>الملف</th><th></th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td><b>${esc(r.title)}</b>${r.has_text?"":'<div class="hint">ممسوح ضوئيًا</div>'}</td><td>${esc(unitById(r.unit_id)?.name||r.unit_id)}</td><td>${r.year}${r.semester?`<div class="hint">${esc(r.semester)}</div>`:""}</td><td>${r.seq||"—"}</td><td>${r.meeting_date?fmtG(r.meeting_date):"—"}</td><td>${approvalCell(r)}</td>
+    ${rows.map(r=>`<tr><td><b>${esc(r.title)}</b>${r.has_text?"":'<div class="hint">ممسوح ضوئيًا</div>'}</td><td>${esc(unitById(r.unit_id)?.name||r.unit_id)}</td><td>${r.year}${r.semester?`<div class="hint">${esc(r.semester)}</div>`:""}</td><td>${r.seq||"—"}</td><td>${r.meeting_date?fmtHs(r.meeting_date):"—"}</td><td>${approvalCell(r)}</td>
       <td class="hint">${esc((r.file_name||"").slice(0,40))}<br>${r.file_size?fmtSize(r.file_size):""}</td>
       <td style="white-space:nowrap"><button class="btn sm" data-arch-open="${r.id}">فتح</button>${canWrite(r.unit_id)?` <button class="btn sm" data-arch-edit="${r.id}">تعديل</button>`:""}${(isAdmin()||r.uploaded_by===S.user.id)?` <button class="btn sm danger" data-arch-del="${r.id}">حذف</button>`:""}</td></tr>`).join("")}
   </tbody></table>`;
@@ -1284,9 +1320,9 @@ function uploadModal(presetUnit){
     <div class="up-grid"><label class="up-t"><span>عنوان المحضر</span><input class="inp" data-uk="title" value="${esc(x.title)}"></label>
       <label><span>رقم المحضر</span><input class="inp" data-uk="seq" type="number" min="1" value="${x.seq}"></label>
       <label><span>العام</span><select class="inp" data-uk="year"><option value="">—</option>${ARCH_YEARS.map(y=>`<option ${x.year===y?"selected":""}>${y}</option>`).join("")}</select></label>
-      <label><span>تاريخ الاجتماع</span><input class="inp" data-uk="meeting_date" type="date" value="${x.meeting_date||""}"></label>
-      <label><span>رقم الاعتماد</span><input class="inp" data-uk="approval_no" value="${esc(x.approval_no||"")}" dir="ltr" placeholder="1111/48/3"></label>
-      <label><span>تاريخ الاعتماد</span><input class="inp" data-uk="approval_date" type="date" value="${x.approval_date||""}"></label></div>
+      <div class="s2"><span class="flabel">تاريخ الاجتماع (هجري)</span>${hijriInput('data-uk="meeting_date"',x.meeting_date,{optional:true})}</div>
+      <label class="s2"><span>رقم الاعتماد</span><input class="inp" data-uk="approval_no" value="${esc(x.approval_no||"")}" dir="ltr" placeholder="1111/48/3"></label>
+      <div class="s2"><span class="flabel">تاريخ الاعتماد (هجري)</span>${hijriInput('data-uk="approval_date"',x.approval_date,{optional:true})}</div></div>
     <div class="up-st hint">${x.st||""}</div></div>`).join("");
   f.files.onchange=()=>{ const y=f.year.value; files=[...f.files.files].map(file=>{ const g=guessFromName(file.name); return {file,title:g.title,seq:g.seq,year:y||g.year,meeting_date:"",st:""}; });
     $("#up-rows").innerHTML=rowsHTML(); $("#up-go").disabled=!files.length; $("#up-go").textContent=`رفع ${files.length} ${files.length>10||files.length<3?"ملف":"ملفات"}`; };
@@ -1321,9 +1357,9 @@ function archEditModal(r){
       <label class="f"><span>العام</span><select class="inp" name="year">${ARCH_YEARS.map(y=>`<option ${r.year===y?"selected":""}>${y}</option>`).join("")}</select></label>
       <label class="f"><span>الفصل</span><select class="inp" name="semester"><option value="">غير محدد</option>${SEMESTERS.map(s=>`<option ${r.semester===s?"selected":""}>${s}</option>`).join("")}</select></label>
       <label class="f"><span>رقم المحضر</span><input class="inp" type="number" min="1" name="seq" value="${r.seq||""}"></label>
-      <label class="f"><span>تاريخ الاجتماع</span><input class="inp" type="date" name="meeting_date" value="${r.meeting_date||""}"></label>
+      <div class="f" style="grid-column:1/-1"><span class="flabel">تاريخ الاجتماع (هجري)</span>${hijriInput('name="meeting_date"',r.meeting_date,{optional:true})}</div>
       <label class="f"><span>رقم الاعتماد</span><input class="inp" name="approval_no" dir="ltr" placeholder="1111/48/3" value="${esc(r.approval_no||"")}"></label>
-      <label class="f"><span>تاريخ الاعتماد</span><input class="inp" type="date" name="approval_date" value="${r.approval_date||""}"></label></div>
+      <div class="f" style="grid-column:1/-1"><span class="flabel">تاريخ الاعتماد (هجري)</span>${hijriInput('name="approval_date"',r.approval_date,{optional:true})}</div></div>
     <label class="f"><span>ملاحظات</span><textarea class="inp" name="notes">${esc(r.notes||"")}</textarea></label>
     <div class="acts"><button class="btn primary">حفظ</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
   $("#aef").onsubmit=async e=>{ e.preventDefault(); const f=e.target;
@@ -1432,7 +1468,7 @@ function afterRender(){
     if(a==="delminute"){ const id=location.hash.split("/")[2]; if(!confirm("حذف المحضر وقراراته نهائيًا؟")) return;
       try{ await Store.removeWhere("decisions","minute_id",id); await Store.remove("minutes",id); await loadAll(); toast("حُذف المحضر"); go("#/minutes"); }catch(err){ toast(err.message); } return; }
     if(a==="csvdec"){ const units=visibleUnits(); const ds=S.decisions.filter(d=>units.some(u=>u.id===d.unit_id));
-      return csvDownload(`قرارات_${S.view.year}.csv`,[["الوحدة","رقم المحضر","تاريخ المحضر","القرار","المسؤول","موعد التنفيذ","الحالة","ملاحظة المتابعة","متأخر"],...ds.map(d=>{const m=S.minutes.find(x=>x.id===d.minute_id)||{}; return [unitById(d.unit_id)?.name,m.seq,m.meeting_date,d.text,d.owner,d.due_date,D_STATUS[d.status],d.progress_note,isLate(d)?"نعم":""];})]); }
+      return csvDownload(`قرارات_${S.view.year}.csv`,[["الوحدة","رقم المحضر","تاريخ المحضر","القرار","المسؤول","موعد التنفيذ","الحالة","ملاحظة المتابعة","متأخر"],...ds.map(d=>{const m=S.minutes.find(x=>x.id===d.minute_id)||{}; return [unitById(d.unit_id)?.name,m.seq,m.meeting_date?fmtHs(m.meeting_date):"",d.text,d.owner,d.due_date?fmtHs(d.due_date):"",D_STATUS[d.status],d.progress_note,isLate(d)?"نعم":""];})]); }
     if(a==="csvstats"){ const rows=[["الوحدة","المؤشر","القيمة","الفصل","العام"]]; visibleUnits().forEach(u=>{ const s=unitSummary(u);
         rows.push([u.name,"محاضر الفصل",s.minutes,S.view.semester,S.view.year],[u.name,"نسبة تنفيذ القرارات %",s.completion,S.view.semester,S.view.year],[u.name,"قرارات متأخرة",s.late,S.view.semester,S.view.year],[u.name,"تغطية المهام %",s.coverage,S.view.semester,S.view.year]);
         u.stats.forEach(d=>rows.push([u.name,d.label+(d.unit==="%"?" %":""),statVal(u.id,d.key)??"",S.view.semester,S.view.year])); });
