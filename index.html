@@ -285,6 +285,8 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .res-mini td{padding:5px 6px;font-size:12.5px}.res-mini td.c{text-align:left;white-space:nowrap}
 .br-d{margin-top:8px}.br-d summary{cursor:pointer;color:var(--jouf);font-size:12.5px;font-weight:600}.br-d table td,.br-d table th{font-size:11.5px;padding:5px 6px}
 .res-ach{font-size:12.5px;white-space:pre-line;line-height:1.8;max-height:150px;overflow:auto;background:var(--head);border-radius:7px;padding:6px 10px}
+.disc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.disc-prev table{width:100%;border-collapse:collapse;margin:6px 0;font-size:12.5px}.disc-prev th,.disc-prev td{border:1px solid var(--line);padding:4px 8px;text-align:right}.disc-prev th{background:var(--jouf-soft);color:var(--jouf-deep)}
 .sg-sec{margin-bottom:12px}.sg-title{font-weight:700;color:var(--jouf-deep);font-size:13.5px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--jouf-soft)}
 .sg-row{display:flex;gap:8px;align-items:flex-start;padding:6px 4px;border-radius:7px;cursor:pointer;font-size:13.5px}.sg-row:hover{background:var(--head)}.sg-row small{display:block;color:var(--muted);font-size:11px}.sg-row input{margin-top:4px}
 .res-head{display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;gap:8px}
@@ -803,7 +805,6 @@ function viewEditor(id,unitId){
       <label class="f"><span>رقم الاجتماع</span><input class="inp" type="number" min="1" data-k="seq" value="${d.seq}"></label>
       <label class="f"><span>الفصل الدراسي</span><select class="inp" data-k="semester">${SEMESTERS.map(s=>`<option ${s===d.semester?"selected":""}>${s}</option>`).join("")}</select></label>
       <div class="f" style="grid-column:span 2"><span class="flabel">تاريخ الاجتماع (هجري) · <b id="hij">${weekday(d.meeting_date)}</b></span>${hijriInput('data-k="meeting_date"',d.meeting_date)}</div>
-      <label class="f"><span>الموافق (هجري)</span><input class="inp" id="hij" value="${esc(weekday(d.meeting_date)+" "+fmtH(d.meeting_date))}" disabled></label>
       <label class="f"><span>وقت البدء</span><input class="inp" type="time" data-k="start_time" value="${d.start_time||""}"></label>
       <label class="f"><span>وقت الانتهاء</span><input class="inp" type="time" data-k="end_time" value="${d.end_time||""}"></label>
       <label class="f"><span>طريقة الانعقاد</span><select class="inp" data-k="mode">${MODES.map(s=>`<option ${s===d.mode?"selected":""}>${s}</option>`).join("")}</select></label>
@@ -819,7 +820,9 @@ function viewEditor(id,unitId){
       <label class="f"><span>الموضوع</span><input class="inp" data-i="${i}" data-ik="topic" value="${esc(it.topic)}" required></label>
       <label class="f"><span>المهمة المرتبطة من مهام ${kindWord(u)}</span><select class="inp" data-i="${i}" data-ik="task">
         <option value="">موضوع عام / محال من جهة أخرى</option>${u.tasks.map((t,k)=>`<option value="${k}" ${String(it.task)===String(k)?"selected":""}>${k+1}. ${esc(t.length>110?t.slice(0,110)+"…":t)}</option>`).join("")}</select></label>
-      <label class="f"><span>المناقشة</span><textarea class="inp" data-i="${i}" data-ik="discussion">${esc(it.discussion)}</textarea></label>
+      <div class="f"><div class="disc-h"><span class="flabel" style="margin:0">المناقشة</span><span style="display:flex;gap:6px"><button type="button" class="btn sm primary" data-imp-word="${i}">رفع ملف Word</button><button type="button" class="btn sm" data-ins-table="${i}">إدراج جدول</button></span></div>
+        <textarea class="inp" rows="4" data-i="${i}" data-ik="discussion" placeholder="اكتب المناقشة، أو الصق من Word أو Excel مباشرة، والجداول تُنقل كما هي">${esc(it.discussion)}</textarea>
+        <div class="disc-prev" data-prev="${i}">${hasTable(it.discussion)?`<div class="hint">معاينة المناقشة كما ستظهر في المحضر:</div>${renderRich(it.discussion)}`:""}</div></div>
       <div class="hint" style="margin-bottom:6px">القرارات والتوصيات</div>
       ${(it.decisions||[]).map((x,j)=>`<div class="dec-row"><textarea class="inp" rows="1" style="min-height:38px" data-i="${i}" data-j="${j}" data-dk="text" placeholder="نص القرار">${esc(x.text)}</textarea>
         <input class="inp" list="mem-${u.id}" data-i="${i}" data-j="${j}" data-dk="owner" value="${esc(x.owner||"")}" placeholder="المسؤول عن التنفيذ">
@@ -843,10 +846,32 @@ function bindEditor(){
     const t=e.target;
     if(t.dataset.k){ d[t.dataset.k]= t.type==="number"? +t.value : t.value; if(t.dataset.k==="meeting_date"){ const h=$("#hij"); if(h) h.textContent=t.value?weekday(t.value):"حدّد التاريخ"; } }
     else if(t.dataset.dk){ d.items[t.dataset.i].decisions[t.dataset.j][t.dataset.dk]=t.value; }
-    else if(t.dataset.ik){ d.items[t.dataset.i][t.dataset.ik]= t.dataset.ik==="task"? (t.value===""?"":+t.value) : t.value; }
+    else if(t.dataset.ik){ d.items[t.dataset.i][t.dataset.ik]= t.dataset.ik==="task"? (t.value===""?"":+t.value) : t.value;
+      if(t.dataset.ik==="discussion"){ const pv=f.querySelector(`[data-prev="${t.dataset.i}"]`); if(pv) pv.innerHTML=hasTable(t.value)?`<div class="hint">معاينة المناقشة كما ستظهر في المحضر:</div>${renderRich(t.value)}`:""; } }
+  });
+  f.addEventListener("paste",e=>{
+    const ta=e.target; if(!ta.matches||!ta.matches('textarea[data-ik="discussion"]')) return;
+    const html=e.clipboardData?.getData("text/html")||"", txt=e.clipboardData?.getData("text/plain")||"";
+    let out=null;
+    if(/<table/i.test(html)) out=htmlToTextWithTables(html);
+    else if(/\t/.test(txt) && txt.split(/\n/).filter(l=>l.includes("\t")).length>=2) out=tabsToBlocks(txt);
+    if(out==null) return;
+    e.preventDefault(); insertAtCursor(ta,out); toast("نُقل الجدول، وستجد معاينته أسفل خانة المناقشة");
   });
   f.addEventListener("click",async e=>{
     const b=e.target.closest("button"); if(!b) return;
+    if(b.dataset.impWord!==undefined){ const i=b.dataset.impWord; const inp=document.createElement("input"); inp.type="file"; inp.accept=".docx";
+      inp.onchange=async()=>{ const file=inp.files[0]; if(!file) return; if(!/\.docx$/i.test(file.name)) return toast("الملف يجب أن يكون Word بصيغة ‎.docx");
+        try{ toast("جارٍ قراءة الملف…"); await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
+          const r=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()}); const txt=htmlToTextWithTables(r.value||"");
+          if(!txt.trim()) return toast("لم يُعثر على نص في الملف");
+          const ta=f.querySelector(`textarea[data-ik="discussion"][data-i="${i}"]`);
+          if(ta.value.trim() && !confirm("خانة المناقشة فيها نص. إضافة محتوى الملف بعده؟ (إلغاء = استبدال النص)")) ta.value="";
+          ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); insertAtCursor(ta,(ta.value?"\n":"")+txt);
+          toast(hasTable(txt)?"نُقل محتوى الملف بجداوله، وتظهر المعاينة أسفل الخانة":"نُقل محتوى الملف"); }catch(err){ toast("تعذّرت قراءة الملف: "+err.message); } };
+      inp.click(); return; }
+    if(b.dataset.insTable!==undefined){ const ta=f.querySelector(`textarea[data-ik="discussion"][data-i="${b.dataset.insTable}"]`); ta.focus();
+      insertAtCursor(ta,(ta.value&&!ta.value.endsWith("\n")?"\n":"")+"[جدول]\nالعنوان الأول | العنوان الثاني | العنوان الثالث\n... | ... | ...\n... | ... | ...\n[/جدول]\n"); return; }
     if(b.closest(".seg")){ const i=b.closest(".seg").dataset.att; d.attendance[i].state=b.dataset.v; b.parentNode.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); attCount(); return; }
     if(b.dataset.addDec!==undefined){ d.items[b.dataset.addDec].decisions.push({id:uuid(),text:"",owner:"",due_date:"",status:"new"}); render(); return; }
     if(b.dataset.delDec){ const [i,j]=b.dataset.delDec.split(":"); d.items[i].decisions.splice(j,1); render(); return; }
@@ -907,7 +932,7 @@ function minuteDoc(m){
     <h4>جدول الأعمال</h4><ol style="margin:0;padding-right:22px">${m.items.map(it=>`<li>${esc(it.topic)}</li>`).join("")}</ol>
     ${m.items.map((it,i)=>{ const dd=ds.filter(x=>x.item_idx===i); return `<h4>الموضوع ${["الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر"][i]||"رقم "+(i+1)}: ${esc(it.topic)}</h4>
       ${it.task!==""&&it.task!=null&&u.tasks[it.task]?`<div style="font-size:12.5px;color:#6E6478">يندرج تحت مهمة: ${esc(u.tasks[it.task])}</div>`:""}
-      ${it.discussion?`<p style="white-space:pre-line;margin:6px 0"><b>المناقشة:</b> ${esc(it.discussion)}</p>`:""}
+      ${it.discussion?`<div style="margin:6px 0"><b>المناقشة:</b> ${renderRich(it.discussion)}</div>`:""}
       ${dd.length?`<table><thead><tr><th style="width:36px">م</th><th>القرار / التوصية</th><th style="width:170px">المسؤول</th><th style="width:100px">موعد التنفيذ</th></tr></thead><tbody>${dd.map((x,k)=>`<tr><td>${k+1}</td><td>${esc(x.text)}</td><td>${esc(x.owner||"—")}</td><td>${fmtHs(x.due_date)}</td></tr>`).join("")}</tbody></table>`:""}`; }).join("")}
     <p style="margin-top:18px">وانتهى الاجتماع في تمام الساعة ${esc(m.end_time||"—")}، والله الموفق.</p>
     <div class="sig"><div>${headTitle(u)} ${kindWord(u)}<br><b>${esc(supervisorOf(u))}</b></div>
@@ -1187,6 +1212,43 @@ function viewStats(){
     <h3 style="margin:6px 0 10px;color:var(--jouf-deep)">النتائج حسب الجهة</h3>
     <div class="res-grid">${units.filter(u=>repStatus(u.id)!=="none").map(resultCard).join("")||`<div class="panel"><div class="empty">لم ترفع أي جهة إحصائياتها لهذا الفصل بعد.</div></div>`}</div>`};
 }
+
+/* ---------------- tables inside discussion text ---------------- */
+const TBL_RE=/\[جدول\]\n?([\s\S]*?)\n?\[\/جدول\]/g;
+function tableBlockHTML(body,cls){
+  const rows=body.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>l.split("|").map(c=>c.trim()));
+  if(!rows.length) return "";
+  const n=Math.max(...rows.map(r=>r.length));
+  const cell=(c,tag)=>`<${tag}>${esc(c||"")}</${tag}>`;
+  return `<table class="${cls||""}"><thead><tr>${Array.from({length:n},(_,k)=>cell(rows[0][k],"th")).join("")}</tr></thead><tbody>${rows.slice(1).map(r=>`<tr>${Array.from({length:n},(_,k)=>cell(r[k],"td")).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function renderRich(text){
+  const t=String(text||""); let out="", last=0, m; TBL_RE.lastIndex=0;
+  while((m=TBL_RE.exec(t))){ const before=t.slice(last,m.index).trim(); if(before) out+=`<div style="white-space:pre-line">${esc(before)}</div>`; out+=tableBlockHTML(m[1]); last=m.index+m[0].length; }
+  const rest=t.slice(last).trim(); if(rest) out+=`<div style="white-space:pre-line">${esc(rest)}</div>`;
+  return out;
+}
+const hasTable=t=>{ TBL_RE.lastIndex=0; return TBL_RE.test(String(t||"")); };
+function rowsToBlock(rows){ return "[جدول]\n"+rows.map(r=>r.map(c=>String(c).replace(/\|/g,"/").replace(/\s+/g," ").trim()).join(" | ")).join("\n")+"\n[/جدول]"; }
+function htmlToTextWithTables(html){
+  const doc=new DOMParser().parseFromString(html,"text/html"); const body=doc.body;
+  body.querySelectorAll("style,script,meta,link,title").forEach(x=>x.remove());
+  body.querySelectorAll("table").forEach(tb=>{
+    if(tb.parentElement&&tb.parentElement.closest("table")) return;
+    const rows=[...tb.rows].map(tr=>[...tr.cells].map(td=>td.textContent)).filter(r=>r.some(c=>c.trim()));
+    tb.replaceWith(doc.createTextNode("\n"+rowsToBlock(rows)+"\n"));
+  });
+  body.querySelectorAll("br").forEach(x=>x.replaceWith(doc.createTextNode("\n")));
+  body.querySelectorAll("p,div,li,h1,h2,h3,h4,h5,h6,tr").forEach(x=>x.append(doc.createTextNode("\n")));
+  return body.textContent.replace(/\u00a0/g," ").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function tabsToBlocks(text){
+  const lines=text.split(/\r?\n/); const out=[]; let buf=[];
+  const flush=()=>{ if(buf.length>=2) out.push(rowsToBlock(buf.map(l=>l.split("\t")))); else out.push(...buf); buf=[]; };
+  lines.forEach(l=>{ if(l.includes("\t")) buf.push(l); else { flush(); out.push(l); } }); flush();
+  return out.join("\n");
+}
+function insertAtCursor(ta,txt){ const s=ta.selectionStart??ta.value.length, e=ta.selectionEnd??s; ta.setRangeText(txt,s,e,"end"); ta.dispatchEvent(new Event("input",{bubbles:true})); }
 
 /* ---------------- suggested agenda topics ---------------- */
 const DISC_TOPICS=[["s",0,"التوعية بلائحة تأديب الطلاب وقواعد السلوك مع بداية الفصل الدراسي"],["a",0,"دراسة حالات الإخلال بالنظام المحالة إلى اللجنة"],["m",2,"دراسة محاضر الغش في الاختبارات الفصلية"],["e",2,"دراسة محاضر الغش في الاختبارات النهائية"],["a",1,"رفع توصيات اللجنة إلى الجهات المختصة وفق لائحة تأديب الطلاب والطالبات"]];
