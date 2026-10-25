@@ -272,6 +272,8 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .filters select,.filters input[type=text]{border:1px solid var(--line);border-radius:9px;padding:6px 10px;background:var(--field);min-height:36px;color:var(--ink)}
 
+.unit-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.unit-chips a{display:inline-flex;gap:8px;align-items:center;padding:7px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;text-decoration:none;color:var(--ink);font-weight:600;font-size:13px}.unit-chips a.on{border-color:var(--jouf);background:var(--jouf-soft);color:var(--jouf-deep)}
+.howto{background:var(--info-soft);border:1px solid var(--info-line);color:var(--info);border-radius:9px;padding:10px 14px;font-size:13px;margin-bottom:12px;line-height:1.8}
 .st-t th.c,.st-t td.c{text-align:center}.st-t td.c .st-in{width:78px;min-height:32px;padding:4px 6px;text-align:center;margin:0 auto;display:block}
 .st-g td{background:var(--jouf-soft)!important;font-weight:700;color:var(--jouf-deep);font-size:12.5px}
 .st-tot{background:var(--head)}
@@ -643,7 +645,7 @@ function shell(content,title,crumb,route){
         <a href="#/minutes" class="${route==="minutes"||route==="minute"?"on":""}"><span>المحاضر</span>${pend?`<span class="badge p">${pend}</span>`:""}</a>
         <a href="#/archive" class="${route==="archive"?"on":""}"><span>أرشيف المحاضر</span>${S.archive.length?`<span class="hint">${S.archive.length}</span>`:""}</a>
         <a href="#/decisions" class="${route==="decisions"?"on":""}"><span>متابعة القرارات</span>${lateN?`<span class="badge">${lateN}</span>`:""}</a>
-        <a href="#/stats" class="${route==="stats"?"on":""}"><span>${isViewer()?"النتائج والمؤشرات":"الإحصائيات والمؤشرات"}</span>${isAdmin()&&S.reports.filter(r=>r.status==="submitted").length?`<span class="badge p">${S.reports.filter(r=>r.status==="submitted").length}</span>`:""}${!isAdmin()&&!isViewer()&&S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length?`<span class="badge">${S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length}</span>`:""}</a>
+        <a href="#/stats" class="${route==="stats"?"on":""}"><span>${isViewer()?"النتائج والمؤشرات":isAdmin()?"الإحصائيات والمؤشرات":"إدخال الإحصائيات"}</span>${isAdmin()&&S.reports.filter(r=>r.status==="submitted").length?`<span class="badge p">${S.reports.filter(r=>r.status==="submitted").length}</span>`:""}${!isAdmin()&&!isViewer()&&S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length?`<span class="badge">${S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length}</span>`:""}</a>
         ${myU.length?`<div class="grp">وحداتي ولجاني</div>`+myU.map(u=>`<a href="#/unit/${u.id}">${esc(u.name)}</a>`).join(""):""}
         ${isAdmin()?`<div class="grp">الإدارة</div><a href="#/users" class="${route==="users"?"on":""}">المستخدمون والصلاحيات</a><a href="#/settings" class="${route==="settings"?"on":""}">الإعدادات والوحدات</a>`:""}
         <div class="grp">الحساب</div>
@@ -1151,6 +1153,12 @@ function resultCard(u){
 }
 function viewStats(){
   const units=visibleUnits().filter(u=>(u.stats||[]).length);
+  if(!isAdmin()&&!isViewer()){
+    if(!units.length) return {title:"إدخال الإحصائيات",html:`<div class="panel"><div class="empty">لا توجد إحصائيات مطلوبة من وحداتك.</div></div>`};
+    const q=new URLSearchParams(location.hash.split("?")[1]||""); const sel=units.find(u=>u.id===q.get("unit"))||units[0];
+    const chips=units.length>1?`<div class="unit-chips">${units.map(u=>{ const st=repStatus(u.id); return `<a href="#/stats?unit=${u.id}" class="${u.id===sel.id?"on":""}">${esc(u.name)} <span class="chip c-${st==="none"?"draft":st}">${R_STATUS[st]}</span></a>`; }).join("")}</div>`:"";
+    return {title:"إدخال الإحصائيات والمؤشرات", crumb:esc(sel.name), html:chips+`<div class="howto">املأ الأرقام في الجدول أدناه للفصل المحدد أعلى الصفحة (${esc(S.view.semester)} ${S.view.year}هـ)، واكتب أبرز الإنجازات وأرفق الشواهد، ثم اضغط <b>حفظ مسودة</b> للحفظ والمتابعة لاحقًا، أو <b>رفع للاعتماد</b> عند الانتهاء.</div>`+unitStatsPanel(sel)};
+  }
   const cnt=k=>units.filter(u=>repStatus(u.id)===k).length;
   const sums=visibleUnits().map(u=>[u,unitSummary(u)]);
   const tot=sums.reduce((a,[,s])=>({m:a.m+s.minutes,d:a.d+s.decisions,dn:a.dn+s.done,l:a.l+s.late}),{m:0,d:0,dn:0,l:0});
@@ -1175,7 +1183,7 @@ function viewStats(){
         <td>${(u.stats||[]).length?`<span class="chip c-${st==="none"?"draft":st}">${R_STATUS[st]}</span>`:'<span class="muted">—</span>'}</td>
         <td class="hint">${rep?.updated_at?fmtHs(rep.updated_at.slice(0,10)):"—"}</td><td>${s.minutes}</td>
         <td><div style="display:flex;gap:8px;align-items:center"><div class="bar"><i style="width:${s.completion}%"></i></div><span class="hint">${s.completion}%</span></div></td><td>${s.coverage}%</td>
-        <td>${st==="submitted"&&isAdmin()?'<span class="btn sm ok">مراجعة واعتماد</span>':""}</td></tr>`; }).join("")}</tbody></table></div>
+        <td>${(u.stats||[]).length?(st==="submitted"&&isAdmin()?'<span class="btn sm ok">مراجعة واعتماد</span>':'<span class="btn sm">فتح</span>'):""}</td></tr>`; }).join("")}</tbody></table></div>
     <h3 style="margin:6px 0 10px;color:var(--jouf-deep)">النتائج حسب الجهة</h3>
     <div class="res-grid">${units.filter(u=>repStatus(u.id)!=="none").map(resultCard).join("")||`<div class="panel"><div class="empty">لم ترفع أي جهة إحصائياتها لهذا الفصل بعد.</div></div>`}</div>`};
 }
