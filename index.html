@@ -250,6 +250,7 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .doc table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
 .doc th,.doc td{border:1px solid #CCC;padding:5px 8px;text-align:right;vertical-align:top}
 .doc th{background:#4A2878;color:#fff;font-weight:700;border-color:#7B5EA7;text-align:center}
+.doc th,.disc-prev th{vertical-align:middle;text-align:center}
 .doc tr:nth-child(even) td{background:#F9F7FF}
 .doc .sig{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:36px;text-align:center}
 .doc .sig>div{border-top:1px dashed #9a8fa6;padding-top:6px}
@@ -1214,29 +1215,57 @@ function viewStats(){
 }
 
 /* ---------------- tables inside discussion text ---------------- */
-const TBL_RE=/\[جدول\]\n?([\s\S]*?)\n?\[\/جدول\]/g;
-function tableBlockHTML(body,cls){
+const TBL_RE=/\[جدول(?::(\d+))?\]\n?([\s\S]*?)\n?\[\/جدول\]/g;
+const SPAN_C="<<", SPAN_R="^^";
+function tableBlockHTML(body,hdr,cls){
   const rows=body.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>l.split("|").map(c=>c.trim()));
   if(!rows.length) return "";
-  const n=Math.max(...rows.map(r=>r.length));
-  const cell=(c,tag)=>`<${tag}>${esc(c||"")}</${tag}>`;
-  return `<table class="${cls||""}"><thead><tr>${Array.from({length:n},(_,k)=>cell(rows[0][k],"th")).join("")}</tr></thead><tbody>${rows.slice(1).map(r=>`<tr>${Array.from({length:n},(_,k)=>cell(r[k],"td")).join("")}</tr>`).join("")}</tbody></table>`;
+  const n=Math.max(...rows.map(r=>r.length)); rows.forEach(r=>{ while(r.length<n) r.push(""); });
+  const h=Math.max(1,Math.min(rows.length,+hdr||1));
+  let html=`<table class="${cls||""}">`;
+  rows.forEach((r,ri)=>{
+    if(ri===0) html+="<thead>"; if(ri===h) html+="<tbody>";
+    html+="<tr>";
+    for(let ci=0;ci<n;ci++){
+      const v=r[ci]; if(v===SPAN_C||v===SPAN_R) continue;
+      let cs=1; while(ci+cs<n && r[ci+cs]===SPAN_C) cs++;
+      let rs=1; while(ri+rs<rows.length && rows[ri+rs][ci]===SPAN_R) rs++;
+      const tag=ri<h?"th":"td";
+      html+=`<${tag}${cs>1?` colspan="${cs}"`:""}${rs>1?` rowspan="${rs}"`:""}>${esc(v)}</${tag}>`;
+    }
+    html+="</tr>"; if(ri===h-1) html+="</thead>";
+  });
+  return html+(rows.length>h?"</tbody>":"")+"</table>";
 }
 function renderRich(text){
   const t=String(text||""); let out="", last=0, m; TBL_RE.lastIndex=0;
-  while((m=TBL_RE.exec(t))){ const before=t.slice(last,m.index).trim(); if(before) out+=`<div style="white-space:pre-line">${esc(before)}</div>`; out+=tableBlockHTML(m[1]); last=m.index+m[0].length; }
+  while((m=TBL_RE.exec(t))){ const before=t.slice(last,m.index).trim(); if(before) out+=`<div style="white-space:pre-line">${esc(before)}</div>`; out+=tableBlockHTML(m[2],m[1]); last=m.index+m[0].length; }
   const rest=t.slice(last).trim(); if(rest) out+=`<div style="white-space:pre-line">${esc(rest)}</div>`;
   return out;
 }
 const hasTable=t=>{ TBL_RE.lastIndex=0; return TBL_RE.test(String(t||"")); };
-function rowsToBlock(rows){ return "[جدول]\n"+rows.map(r=>r.map(c=>String(c).replace(/\|/g,"/").replace(/\s+/g," ").trim()).join(" | ")).join("\n")+"\n[/جدول]"; }
+function rowsToBlock(rows,hdr){ const cl=c=>(c===SPAN_C||c===SPAN_R)?c:String(c).replace(/\|/g,"/").replace(/\s+/g," ").trim();
+  return `[جدول${hdr>1?":"+hdr:""}]\n`+rows.map(r=>r.map(cl).join(" | ")).join("\n")+"\n[/جدول]"; }
+function tableToGrid(tb){
+  const grid=[]; let hdr=1; const trs=[...tb.rows];
+  trs.forEach((tr,r)=>{ grid[r]=grid[r]||[]; let c=0;
+    [...tr.cells].forEach(td=>{ while(grid[r][c]!==undefined) c++;
+      const rs=Math.max(1,td.rowSpan||1), cs=Math.max(1,td.colSpan||1);
+      for(let i=0;i<rs;i++){ grid[r+i]=grid[r+i]||[]; for(let j=0;j<cs;j++){ grid[r+i][c+j]= (i===0&&j===0)? td.textContent : (i===0?SPAN_C:SPAN_R); } }
+      if(r===0) hdr=Math.max(hdr,rs);
+      c+=cs; }); });
+  const thead=tb.tHead?tb.tHead.rows.length:0; if(thead>hdr) hdr=thead;
+  const n=Math.max(0,...grid.map(r=>r.length));
+  const rows=grid.slice(0,trs.length).map(r=>Array.from({length:n},(_,k)=>r[k]===undefined?"":r[k]));
+  return {rows:rows.filter(r=>r.some(c=>String(c).trim()&&c!==SPAN_C&&c!==SPAN_R)||true), hdr:Math.min(hdr,rows.length)};
+}
 function htmlToTextWithTables(html){
   const doc=new DOMParser().parseFromString(html,"text/html"); const body=doc.body;
   body.querySelectorAll("style,script,meta,link,title").forEach(x=>x.remove());
-  body.querySelectorAll("table").forEach(tb=>{
+  [...body.querySelectorAll("table")].reverse().forEach(tb=>{
     if(tb.parentElement&&tb.parentElement.closest("table")) return;
-    const rows=[...tb.rows].map(tr=>[...tr.cells].map(td=>td.textContent)).filter(r=>r.some(c=>c.trim()));
-    tb.replaceWith(doc.createTextNode("\n"+rowsToBlock(rows)+"\n"));
+    const {rows,hdr}=tableToGrid(tb);
+    tb.replaceWith(doc.createTextNode("\n"+rowsToBlock(rows,hdr)+"\n"));
   });
   body.querySelectorAll("br").forEach(x=>x.replaceWith(doc.createTextNode("\n")));
   body.querySelectorAll("p,div,li,h1,h2,h3,h4,h5,h6,tr").forEach(x=>x.append(doc.createTextNode("\n")));
