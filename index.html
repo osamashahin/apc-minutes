@@ -258,6 +258,7 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .doc th,.disc-prev th{vertical-align:middle;text-align:center}
 .doc tr:nth-child(even) td{background:#F9F7FF}
 .doc .sig{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:36px;text-align:center}
+.doc .sig.sig1{grid-template-columns:1fr;max-width:340px;margin-right:auto;margin-left:0}
 .doc .sig>div{border-top:1px dashed #9a8fa6;padding-top:6px}
 .doc .stamp{display:inline-block;border:2px solid #15803D;color:#15803D;border-radius:6px;padding:2px 12px;font-weight:700;font-size:13px;transform:rotate(-3deg)}
 .doc .wm{color:#B45309;border-color:#B45309}
@@ -840,7 +841,7 @@ function viewEditor(id,unitId){
     <button type="button" class="btn" data-act="additem">إضافة بند</button>
     <div class="sticky-actions">
       <button type="button" class="btn" data-save="draft">حفظ كمسودة</button>
-      ${isAdmin()? `<button type="button" class="btn ok" data-save="approved">حفظ واعتماد</button>` : `<button type="button" class="btn primary" data-save="submitted">رفع للاعتماد</button>`}
+      ${`<button type="button" class="btn ok" data-save="approved">حفظ واعتماد</button>`}
       <a class="btn" href="${d.id?"#/minute/"+d.id:"#/unit/"+u.id+"/minutes"}" data-act="canceled">إلغاء</a>
     </div></form>`;
   return {title:d.id?`تعديل المحضر رقم ${d.seq}`:"محضر جديد", crumb:esc(u.name), html};
@@ -954,8 +955,7 @@ function minuteDoc(m){
       ${it.discussion?`<div style="margin:6px 0"><b>المناقشة:</b> ${renderRich(it.discussion)}</div>`:""}
       ${dd.length?`<table><thead><tr><th style="width:36px">م</th><th>القرار / التوصية</th><th style="width:170px">المسؤول</th><th style="width:100px">موعد التنفيذ</th></tr></thead><tbody>${dd.map((x,k)=>`<tr><td>${k+1}</td><td>${esc(x.text)}</td><td>${esc(x.owner||"—")}</td><td>${fmtHs(x.due_date)}</td></tr>`).join("")}</tbody></table>`:""}`; }).join("")}
     <p style="margin-top:18px">وانتهى الاجتماع في تمام الساعة ${esc(m.end_time||"—")}، والله الموفق.</p>
-    <div class="sig"><div>${headTitle(u)} ${kindWord(u)}<br><b>${esc(supervisorOf(u))}</b></div>
-      <div>مشرف الشؤون الأكاديمية<br>${m.status==="approved"?`<span class="stamp">معتمد</span>${m.approval_no?`<div style="font-size:12.5px;line-height:1.7;margin-top:4px">بالمعاملة رقم <b dir="ltr">${esc(m.approval_no)}</b><br>وتاريخ ${fmtH(m.approval_date)}</div>`:""}${appr?`<b>${esc(appr.full_name)}</b>`:""}`:`<span class="stamp wm">${M_STATUS[m.status]}</span>`}</div></div>
+    <div class="sig sig1"><div>${headTitle(u)} ${kindWord(u)}<br><b>${esc(supervisorOf(u))}</b><br>${m.status==="approved"?`<span class="stamp">معتمد</span>${m.approval_no?`<div style="font-size:12.5px;line-height:1.7;margin-top:4px">بالمعاملة رقم <b dir="ltr">${esc(m.approval_no)}</b><br>وتاريخ ${fmtH(m.approval_date)}</div>`:""}`:`<span class="stamp wm">${M_STATUS[m.status]}</span>`}</div></div>
   </article>`;
 }
 function viewMinute(id){
@@ -967,7 +967,7 @@ function viewMinute(id){
     <div class="doc-actions">
       <button class="btn" data-act="print">طباعة / حفظ PDF</button>
       ${canEdit?`<a class="btn" href="#/minute/${m.id}/edit">تعديل</a>`:""}
-      ${w && ["draft","returned"].includes(m.status) && !isAdmin()?`<button class="btn primary" data-mstatus="submitted">رفع للاعتماد</button>`:""}${w && m.status==="submitted" && !isAdmin()?`<button class="btn" data-act="withdraw">سحب المحضر للتعديل</button>`:""}
+      ${w && ["draft","returned","submitted"].includes(m.status) && !isAdmin()?`<button class="btn ok" data-mstatus="approved">اعتماد المحضر</button>`:""}${w && m.status==="submitted" && !isAdmin()?`<button class="btn" data-act="withdraw">سحب المحضر للتعديل</button>`:""}
       ${isAdmin() && m.status!=="approved"?`<button class="btn ok" data-mstatus="approved">اعتماد المحضر</button><button class="btn" data-act="return">إعادة للتعديل</button>`:""}
       ${isAdmin() && m.status==="approved"?`<button class="btn" data-act="editapproval">بيانات الاعتماد</button><button class="btn" data-mstatus="draft">إلغاء الاعتماد</button>`:""}
       ${(isAdmin() || (w && ["draft","returned"].includes(m.status)))?`<button class="btn danger" data-act="delminute">حذف</button>`:""}
@@ -1448,7 +1448,7 @@ function normApproval(v,year){ v=String(v||"").replace(/\s/g,""); if(!v) return 
 function approvalModal(cur,onOk){
   cur=cur||{}; const n0=(cur.approval_no||"").split("/")[0];
   modal(`<h3>بيانات اعتماد المحضر</h3><form id="apf">
-    <p class="hint" style="margin-top:0">أدخل رقم معاملة الاعتماد وتاريخها، ويُكوَّن رقم الاعتماد تلقائيًا بالصيغة: رقم المعاملة / السنة الهجرية / 3.</p>
+    <p class="hint" style="margin-top:0">أدخل رقم معاملة الاعتماد وتاريخها، ويُكوَّن رقم الاعتماد تلقائيًا بالصيغة: رقم المعاملة / السنة الهجرية / 3. بعد الاعتماد لا يمكن تعديل المحضر إلا من مشرف الشؤون الأكاديمية.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
       <label class="f"><span>رقم المعاملة</span><input class="inp" name="n" inputmode="numeric" required value="${esc(n0)}" dir="ltr" placeholder="1111"></label>
       <div class="f"><span class="flabel">تاريخ الاعتماد (هجري)</span>${hijriInput('name="d"',cur.approval_date||todayISO())}</div></div>
