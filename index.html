@@ -233,6 +233,11 @@ table.t tr.clk:hover td{background:var(--jouf-soft)}
 .item-head b{color:var(--jouf-deep)}
 .dec-row{display:grid;grid-template-columns:1fr 190px 250px 34px;gap:8px;margin-bottom:8px;align-items:start}
 @media (max-width:800px){.dec-row{grid-template-columns:1fr 1fr}.dec-row textarea{grid-column:1/-1}}
+.dec-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--head)}
+.dec-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;color:var(--jouf-deep)}
+.dec-del{border:1px solid var(--late-line);background:var(--late-soft);color:var(--late);border-radius:7px;padding:2px 10px;font-size:12px;cursor:pointer}
+.dec-meta{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-top:8px}.dec-meta label span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+@media (max-width:700px){.dec-meta{grid-template-columns:1fr}}
 .hdate{display:flex;gap:4px}.hdate select.inp{min-width:0;padding:6px 6px}.hd-d{flex:0 0 62px}.hd-m{flex:1 1 112px}.hd-y{flex:0 0 76px}
 .flabel{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}.flabel b{color:var(--jouf)}
 .up-grid .flabel{font-size:11px;margin-bottom:0}
@@ -825,10 +830,11 @@ function viewEditor(id,unitId){
         <textarea class="inp" rows="4" data-i="${i}" data-ik="discussion" placeholder="اكتب المناقشة، أو الصق من Word أو Excel مباشرة، والجداول تُنقل كما هي">${esc(it.discussion)}</textarea>
         <div class="disc-prev" data-prev="${i}">${hasTable(it.discussion)?`<div class="hint">معاينة المناقشة كما ستظهر في المحضر:</div>${renderRich(it.discussion)}`:""}</div></div>
       <div class="hint" style="margin-bottom:6px">القرارات والتوصيات</div>
-      ${(it.decisions||[]).map((x,j)=>`<div class="dec-row"><textarea class="inp" rows="1" style="min-height:38px" data-i="${i}" data-j="${j}" data-dk="text" placeholder="نص القرار">${esc(x.text)}</textarea>
-        <input class="inp" list="mem-${u.id}" data-i="${i}" data-j="${j}" data-dk="owner" value="${esc(x.owner||"")}" placeholder="المسؤول عن التنفيذ">
-        <div title="موعد التنفيذ">${hijriInput(`data-i="${i}" data-j="${j}" data-dk="due_date"`,x.due_date,{optional:true})}</div>
-        <button type="button" class="x" data-del-dec="${i}:${j}" aria-label="حذف القرار">✕</button></div>`).join("")}
+      ${(it.decisions||[]).map((x,j)=>`<div class="dec-card">
+        <div class="dec-top"><b>القرار ${j+1}</b><button type="button" class="dec-del" data-del-dec="${i}:${j}" title="حذف القرار">✕ حذف</button></div>
+        <textarea class="inp" rows="2" data-i="${i}" data-j="${j}" data-dk="text" placeholder="نص القرار أو التوصية">${esc(x.text)}</textarea>
+        <div class="dec-meta"><label><span>المسؤول عن التنفيذ</span><input class="inp" list="mem-${u.id}" data-i="${i}" data-j="${j}" data-dk="owner" value="${esc(x.owner||"")}" placeholder="اختر أو اكتب"></label>
+          <div><span class="flabel">موعد التنفيذ (اختياري)</span>${hijriInput(`data-i="${i}" data-j="${j}" data-dk="due_date"`,x.due_date,{optional:true})}</div></div></div>`).join("")}
       <button type="button" class="btn sm" data-add-dec="${i}" style="margin-bottom:10px">إضافة قرار</button></div>`).join("")}
     <datalist id="mem-${u.id}">${u.members.map(x=>`<option value="${esc(x.name)}">`).join("")}<option value="${esc(u.name)}"></datalist>
     <button type="button" class="btn" data-act="additem">إضافة بند</button>
