@@ -967,7 +967,7 @@ function viewMinute(id){
     <div class="doc-actions">
       <button class="btn" data-act="print">طباعة / حفظ PDF</button>
       ${canEdit?`<a class="btn" href="#/minute/${m.id}/edit">تعديل</a>`:""}
-      ${w && ["draft","returned"].includes(m.status) && !isAdmin()?`<button class="btn primary" data-mstatus="submitted">رفع للاعتماد</button>`:""}
+      ${w && ["draft","returned"].includes(m.status) && !isAdmin()?`<button class="btn primary" data-mstatus="submitted">رفع للاعتماد</button>`:""}${w && m.status==="submitted" && !isAdmin()?`<button class="btn" data-act="withdraw">سحب المحضر للتعديل</button>`:""}
       ${isAdmin() && m.status!=="approved"?`<button class="btn ok" data-mstatus="approved">اعتماد المحضر</button><button class="btn" data-act="return">إعادة للتعديل</button>`:""}
       ${isAdmin() && m.status==="approved"?`<button class="btn" data-act="editapproval">بيانات الاعتماد</button><button class="btn" data-mstatus="draft">إلغاء الاعتماد</button>`:""}
       ${(isAdmin() || (w && ["draft","returned"].includes(m.status)))?`<button class="btn danger" data-act="delminute">حذف</button>`:""}
@@ -977,7 +977,7 @@ async function setMinuteStatus(id,status,note,extra){
   const patch={status,review_note:note??null,...(extra||{})};
   if(Store.mode==="demo"&&status==="approved"){ patch.approved_by=S.user.id; patch.approved_at=new Date().toISOString(); }
   if(status==="draft"){ patch.approved_by=null; patch.approved_at=null; patch.approval_no=null; patch.approval_date=null; }
-  try{ await Store.update("minutes",id,patch); await loadAll(); toast({submitted:"رُفع المحضر للاعتماد",approved:"اعتُمد المحضر",returned:"أُعيد المحضر للتعديل",draft:"أُلغي الاعتماد"}[status]); render(); }
+  try{ await Store.update("minutes",id,patch); await loadAll(); toast({submitted:"رُفع المحضر للاعتماد",approved:"اعتُمد المحضر",returned:"أُعيد المحضر للتعديل",draft:isAdmin()?"أُلغي الاعتماد":"سُحب المحضر وأصبح مسودة"}[status]); render(); }
   catch(e){ toast("تعذّر التنفيذ: "+e.message); }
 }
 
@@ -1120,7 +1120,7 @@ function unitStatsPanel(u){
   const files=rep?.files||[];
   const actions = isViewer()? "" : isAdmin()
     ? `<button type="button" class="btn" data-rep="save">حفظ</button>${st==="submitted"||st==="returned"||st==="draft"?`<button type="button" class="btn ok" data-rep="approve">اعتماد الإحصائيات</button>`:""}${st==="submitted"?`<button type="button" class="btn" data-rep="return">إعادة للتعديل</button>`:""}${st==="approved"?`<button type="button" class="btn" data-rep="unapprove">إلغاء الاعتماد</button>`:""}`
-    : editable? `<button type="button" class="btn" data-rep="save">حفظ مسودة</button><button type="button" class="btn primary" data-rep="submit">رفع للاعتماد</button>` : "";
+    : editable? `<button type="button" class="btn" data-rep="save">حفظ مسودة</button><button type="button" class="btn primary" data-rep="submit">رفع للاعتماد</button>` : (sup&&st==="submitted"? `<button type="button" class="btn" data-rep="withdraw">سحب الإحصائيات للتعديل</button>` : "");
   return auto+`<form class="panel" id="statf" data-unit="${u.id}" onsubmit="return false">
     <div class="panel-head"><h3>${isViewer()?"النتائج المعتمدة":"الإحصائيات والمؤشرات المطلوبة"} · ${esc(S.view.semester)} ${S.view.year}هـ</h3><span class="chip c-${st==="none"?"draft":st}">${R_STATUS[st]}</span></div>
     ${st==="returned"&&rep?.review_note?`<div class="note-box" style="max-width:none">ملاحظة مشرف الشؤون الأكاديمية: ${esc(rep.review_note)}</div>`:""}
@@ -1161,7 +1161,7 @@ async function saveReport(u,status,note){
     if(Store.mode==="demo"&&status==="approved"){ row.approved_by=S.user.id; row.approved_at=new Date().toISOString(); }
     if(status!=="approved"&&rep?.status==="approved"){ row.approved_by=null; row.approved_at=null; }
     await Store.upsert("stat_reports",[row],["unit_id","year","semester"]);
-    await loadAll(); toast({draft:"حُفظت المسودة",submitted:"رُفعت الإحصائيات للاعتماد",approved:"اعتُمدت الإحصائيات",returned:"أُعيدت للتعديل"}[status]); render();
+    await loadAll(); toast({draft:rep?.status==="submitted"?"سُحبت الإحصائيات للتعديل":"حُفظت المسودة",submitted:"رُفعت الإحصائيات للاعتماد",approved:"اعتُمدت الإحصائيات",returned:"أُعيدت للتعديل"}[status]); render();
   }catch(err){ toast("تعذّر الحفظ: "+err.message); }
 }
 function bindReport(){
@@ -1180,6 +1180,7 @@ function bindReport(){
     if(a==="save") return saveReport(u, isAdmin()? (cur==="none"?"draft":cur) : (cur==="returned"?"returned":"draft"));
     if(a==="submit"){ if(!confirm("رفع إحصائيات الفصل للاعتماد؟ لن تتمكن من تعديلها بعد الرفع إلا إذا أُعيدت إليك.")) return; return saveReport(u,"submitted"); }
     if(a==="approve"){ if(!confirm("اعتماد إحصائيات هذا الفصل؟ ستظهر النتائج للرئيس التنفيذي ونائبه.")) return; return saveReport(u,"approved"); }
+    if(a==="withdraw"){ if(!confirm("سحب الإحصائيات من الاعتماد وإرجاعها مسودة للتعديل؟")) return; return saveReport(u,"draft"); }
     if(a==="unapprove"){ if(!confirm("إلغاء اعتماد الإحصائيات؟")) return; return saveReport(u,"submitted"); }
     if(a==="return"){ modal(`<h3>إعادة الإحصائيات للتعديل</h3><form id="rrf"><label class="f"><span>ملاحظاتك لمشرف ${kindWord(u)}</span><textarea class="inp" name="n" required></textarea></label><div class="acts"><button class="btn primary">إعادة</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
       $("#rrf").onsubmit=ev=>{ ev.preventDefault(); const n=ev.target.n.value; closeModal(); saveReport(u,"returned",n); }; }
@@ -1900,6 +1901,7 @@ function afterRender(){
       if(st==="approved") return approvalModal(S.minutes.find(x=>x.id===id),v=>setMinuteStatus(id,"approved",null,v));
       if(st==="draft" && !confirm("إلغاء اعتماد المحضر وحذف رقم الاعتماد؟")) return;
       return setMinuteStatus(id,st); }
+    if(a==="withdraw"){ const id=location.hash.split("/")[2]; if(!confirm("سحب المحضر من الاعتماد وإرجاعه مسودة للتعديل؟")) return; return setMinuteStatus(id,"draft"); }
     if(a==="editapproval"){ const id=location.hash.split("/")[2]; return approvalModal(S.minutes.find(x=>x.id===id),async v=>{ try{ await Store.update("minutes",id,v); await loadAll(); toast("حُدّثت بيانات الاعتماد"); render(); }catch(err){ toast(err.message); } }); }
     if(a==="return"){ const id=location.hash.split("/")[2];
       modal(`<h3>إعادة المحضر للتعديل</h3><form id="rf"><label class="f"><span>ملاحظاتك لمشرف الوحدة</span><textarea class="inp" name="n" required></textarea></label><div class="acts"><button class="btn primary">إعادة</button><button type="button" class="btn" data-close>إلغاء</button></div></form>`);
