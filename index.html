@@ -1281,7 +1281,7 @@ function tableToGrid(tb,tf){ tf=tf||(el=>el.textContent);
 function cellLine(el){ return textOf(el).replace(/\s+/g," ").trim(); }
 function isLayoutTable(tb){
   if(tb.querySelector("table")) return true;
-  return [...tb.rows].some(tr=>[...tr.cells].some(td=>td.querySelectorAll("p,li").length>2 || (td.textContent||"").length>220));
+  return [...tb.rows].some(tr=>[...tr.cells].some(td=>(td.textContent||"").replace(/\s+/g," ").length>200 || td.querySelectorAll("p,li").length>6));
 }
 function textOf(node){
   if(node.nodeType===3) return node.nodeValue;
