@@ -854,7 +854,13 @@ function bindEditor(){
     const ta=e.target; if(!ta.matches||!ta.matches('textarea[data-ik="discussion"]')) return;
     const html=e.clipboardData?.getData("text/html")||"", txt=e.clipboardData?.getData("text/plain")||"";
     let out=null;
-    if(/<table/i.test(html)) out=htmlToTextWithTables(html);
+    if(/<table/i.test(html)){
+      const tpl=parseMinuteTemplate(html);
+      if(tpl.length && (tpl[0].discussion||tpl[0].decisions.length) && confirm(`المحتوى الملصق بصيغة محضر (${tpl.length>1?tpl.length+" موضوعات":"موضوع واحد"}). تعبئة الموضوع والمناقشة والقرارات تلقائيًا؟\n(إلغاء = لصق النص في خانة المناقشة فقط)`)){
+        e.preventDefault(); const idx=+ta.dataset.i;
+        tpl.forEach((x,k)=>{ if(k===0) d.items[idx]={...d.items[idx],topic:x.topic,discussion:x.discussion,decisions:[...(d.items[idx].decisions||[]).filter(z=>z.text&&z.text.trim()),...x.decisions]}; else d.items.splice(idx+k,0,{id:uuid(),task:"",...x}); });
+        toast("عُبّئ البند من المحتوى الملصق، راجعه قبل الحفظ"); render(); return; }
+      out=htmlToTextWithTables(html); }
     else if(/\t/.test(txt) && txt.split(/\n/).filter(l=>l.includes("\t")).length>=2) out=tabsToBlocks(txt);
     if(out==null) return;
     e.preventDefault(); insertAtCursor(ta,out); toast("نُقل الجدول، وستجد معاينته أسفل خانة المناقشة");
@@ -864,7 +870,13 @@ function bindEditor(){
     if(b.dataset.impWord!==undefined){ const i=b.dataset.impWord; const inp=document.createElement("input"); inp.type="file"; inp.accept=".docx";
       inp.onchange=async()=>{ const file=inp.files[0]; if(!file) return; if(!/\.docx$/i.test(file.name)) return toast("الملف يجب أن يكون Word بصيغة ‎.docx");
         try{ toast("جارٍ قراءة الملف…"); await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
-          const r=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()}); const txt=htmlToTextWithTables(r.value||"");
+          const r=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
+          const tpl=parseMinuteTemplate(r.value||"");
+          if(tpl.length && (tpl[0].discussion||tpl[0].decisions.length)){
+            if(!confirm(`تم التعرف على ${tpl.length>1?tpl.length+" موضوعات":"موضوع"} بصيغة محضر (الموضوع، المناقشة، القرار، الجهة ذات العلاقة).\nتعبئة ${tpl.length>1?"البنود":"البند"} تلقائيًا؟`)) return;
+            const idx=+i; tpl.forEach((x,k)=>{ const it={id:uuid(),task:"",...x}; if(k===0){ d.items[idx]={...d.items[idx],topic:x.topic,discussion:x.discussion,decisions:[...(d.items[idx].decisions||[]).filter(z=>z.text&&z.text.trim()),...x.decisions]}; } else d.items.splice(idx+k,0,it); });
+            toast(`عُبّئ ${tpl.length>1?tpl.length+" بنود":"البند"} من الملف، راجع المحتوى قبل الحفظ`); render(); return; }
+          const txt=htmlToTextWithTables(r.value||"");
           if(!txt.trim()) return toast("لم يُعثر على نص في الملف");
           const ta=f.querySelector(`textarea[data-ik="discussion"][data-i="${i}"]`);
           if(ta.value.trim() && !confirm("خانة المناقشة فيها نص. إضافة محتوى الملف بعده؟ (إلغاء = استبدال النص)")) ta.value="";
@@ -1246,12 +1258,12 @@ function renderRich(text){
 const hasTable=t=>{ TBL_RE.lastIndex=0; return TBL_RE.test(String(t||"")); };
 function rowsToBlock(rows,hdr){ const cl=c=>(c===SPAN_C||c===SPAN_R)?c:String(c).replace(/\|/g,"/").replace(/\s+/g," ").trim();
   return `[جدول${hdr>1?":"+hdr:""}]\n`+rows.map(r=>r.map(cl).join(" | ")).join("\n")+"\n[/جدول]"; }
-function tableToGrid(tb){
+function tableToGrid(tb,tf){ tf=tf||(el=>el.textContent);
   const grid=[]; let hdr=1; const trs=[...tb.rows];
   trs.forEach((tr,r)=>{ grid[r]=grid[r]||[]; let c=0;
     [...tr.cells].forEach(td=>{ while(grid[r][c]!==undefined) c++;
       const rs=Math.max(1,td.rowSpan||1), cs=Math.max(1,td.colSpan||1);
-      for(let i=0;i<rs;i++){ grid[r+i]=grid[r+i]||[]; for(let j=0;j<cs;j++){ grid[r+i][c+j]= (i===0&&j===0)? td.textContent : (i===0?SPAN_C:SPAN_R); } }
+      for(let i=0;i<rs;i++){ grid[r+i]=grid[r+i]||[]; for(let j=0;j<cs;j++){ grid[r+i][c+j]= (i===0&&j===0)? tf(td) : (i===0?SPAN_C:SPAN_R); } }
       if(r===0) hdr=Math.max(hdr,rs);
       c+=cs; }); });
   const thead=tb.tHead?tb.tHead.rows.length:0; if(thead>hdr) hdr=thead;
@@ -1259,17 +1271,54 @@ function tableToGrid(tb){
   const rows=grid.slice(0,trs.length).map(r=>Array.from({length:n},(_,k)=>r[k]===undefined?"":r[k]));
   return {rows:rows.filter(r=>r.some(c=>String(c).trim()&&c!==SPAN_C&&c!==SPAN_R)||true), hdr:Math.min(hdr,rows.length)};
 }
-function htmlToTextWithTables(html){
-  const doc=new DOMParser().parseFromString(html,"text/html"); const body=doc.body;
-  body.querySelectorAll("style,script,meta,link,title").forEach(x=>x.remove());
-  [...body.querySelectorAll("table")].reverse().forEach(tb=>{
-    if(tb.parentElement&&tb.parentElement.closest("table")) return;
-    const {rows,hdr}=tableToGrid(tb);
-    tb.replaceWith(doc.createTextNode("\n"+rowsToBlock(rows,hdr)+"\n"));
+function cellLine(el){ return textOf(el).replace(/\s+/g," ").trim(); }
+function isLayoutTable(tb){
+  if(tb.querySelector("table")) return true;
+  return [...tb.rows].some(tr=>[...tr.cells].some(td=>td.querySelectorAll("p,li").length>2 || (td.textContent||"").length>220));
+}
+function textOf(node){
+  if(node.nodeType===3) return node.nodeValue;
+  if(node.nodeType!==1) return "";
+  const tag=node.tagName.toLowerCase();
+  if(["style","script","meta","link","title"].includes(tag)) return "";
+  if(tag==="br") return "\n";
+  if(tag==="table"){
+    if(isLayoutTable(node)) return "\n"+[...node.rows].map(tr=>{ const cells=[...tr.cells].map(td=>textOf(td).trim()).filter(c=>c&&!/^\d{1,2}$/.test(c));
+      return cells.length>1 && cells[0].length<60 && !cells[0].includes("\n") ? cells[0]+":\n"+cells.slice(1).join("\n") : cells.join("\n"); }).join("\n\n")+"\n";
+    const {rows,hdr}=tableToGrid(node,cellLine); return "\n"+rowsToBlock(rows,hdr)+"\n";
+  }
+  let inner=[...node.childNodes].map(textOf).join("");
+  if(tag==="li") inner="• "+inner.trim();
+  if(["p","div","li","h1","h2","h3","h4","h5","h6","tr","ul","ol"].includes(tag)) inner=inner+"\n";
+  return inner;
+}
+function tidyText(t){ return t.replace(/\u00a0/g," ").replace(/[ \t]+\n/g,"\n").replace(/\n[ \t]+/g,"\n").replace(/\n{3,}/g,"\n\n").trim(); }
+function htmlToTextWithTables(html){ const doc=new DOMParser().parseFromString(html,"text/html"); return tidyText(textOf(doc.body)); }
+function parseMinuteTemplate(html){
+  const doc=new DOMParser().parseFromString(html,"text/html"); const items=[]; let cur=null;
+  const lab=t=>normAr(t).replace(/[\d:/\\\-\s]+/g," ").trim();
+  doc.body.querySelectorAll("table").forEach(tb=>{ if(tb.parentElement&&tb.parentElement.closest("table")) return;
+    [...tb.rows].forEach(tr=>{
+      const cells=[...tr.cells].map(td=>({td,txt:tidyText(textOf(td))})).filter(c=>c.txt&&!/^\d{1,2}$/.test(c.txt));
+      if(cells.length<2) return;
+      const L=cells[0], content=cells.slice(1).map(c=>c.txt).join("\n"), k=lab(L.txt);
+      if(L.txt.length>70) return;
+      if(/^الموضوع/.test(k)&&!/مناقش|وصف/.test(k)){ cur={topic:content.replace(/\s+/g," ").trim(),discussion:"",decisionText:"",basis:"",owner:""}; items.push(cur); return; }
+      if(!cur) return;
+      if(/مناقش|ملخص|وصف/.test(k)) cur.discussion+=(cur.discussion?"\n":"")+content;
+      else if(/قرار|توصي/.test(k)&&!/مستند|سند/.test(k)) cur.decisionText+=(cur.decisionText?"\n":"")+content;
+      else if(/مستند|سند/.test(k)) cur.basis+=(cur.basis?"\n":"")+content;
+      else if(/جهه|جهة|علاق/.test(k)) cur.owner=content.replace(/\s+/g," ").trim();
+    });
   });
-  body.querySelectorAll("br").forEach(x=>x.replaceWith(doc.createTextNode("\n")));
-  body.querySelectorAll("p,div,li,h1,h2,h3,h4,h5,h6,tr").forEach(x=>x.append(doc.createTextNode("\n")));
-  return body.textContent.replace(/\u00a0/g," ").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+  return items.filter(x=>x.topic).map(x=>{
+    const lines=x.decisionText.split("\n").map(l=>l.trim()).filter(Boolean);
+    const numbered=lines.filter(l=>/^(\d+|[٠-٩]+)\s*[\.\-)]/.test(l)||/^[•\-]/.test(l));
+    const decs=(numbered.length?numbered.map(l=>l.replace(/^(\d+|[٠-٩]+)\s*[\.\-)]\s*|^[•\-]\s*/,"")):(lines.filter(l=>!/:\s*$/.test(l)).length?[lines.filter(l=>!/:\s*$/.test(l)).join(" ")]:[]))
+      .map(t=>({id:uuid(),text:t,owner:x.owner,due_date:"",status:"new"}));
+    let disc=x.discussion; if(x.basis) disc+=(disc?"\n\n":"")+"مستند القرار/التوصية: "+x.basis.replace(/\s*\n\s*/g," ");
+    return {topic:x.topic,discussion:disc,decisions:decs};
+  });
 }
 function tabsToBlocks(text){
   const lines=text.split(/\r?\n/); const out=[]; let buf=[];
