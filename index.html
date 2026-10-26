@@ -313,6 +313,61 @@ mark{background:#FDE68A;color:inherit;border-radius:3px;padding:0 2px}
 .bk-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #F4F0FA}.bk-row:last-child{border-bottom:0}
 .bk-name{flex:1;font-size:13px;line-height:1.4}.bk-name small{display:block;color:var(--muted);font-size:11.5px}
 .up-st{margin-top:4px}
+/* ---------- dashboard (rafed-like) ---------- */
+.sb{background:linear-gradient(180deg,#2C1A4A 0%,#3A2462 60%,#2C1A4A 100%)!important;border-left:0!important}
+.nav a{color:rgba(255,255,255,.78)!important;border-right-color:transparent;margin:2px 10px;border-radius:9px;padding:10px 12px!important}
+.nav a span{display:inline-flex;align-items:center;gap:10px}
+.nav a .ic{opacity:.85;flex:none}
+.nav a:hover{background:rgba(255,255,255,.08)!important;color:#fff!important}
+.nav a.on{background:rgba(255,255,255,.14)!important;color:#fff!important;border-right:3px solid #C9A8F0!important}
+.nav a .hint{color:rgba(255,255,255,.55)}
+.nav .grp{color:rgba(255,255,255,.45)!important;padding:16px 22px 4px!important}
+.tb-search{display:flex;align-items:center;gap:6px;background:var(--jouf-soft);border:1px solid var(--line);border-radius:20px;padding:4px 12px;color:var(--muted)}
+.tb-search input{border:0;background:none;outline:none;width:170px;font-size:12.5px;color:var(--ink)}
+@media (max-width:1100px){.tb-search{display:none}}
+.kcs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kc{display:block;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-left:4px solid var(--kc);box-shadow:0 2px 10px rgba(74,40,120,.05);transition:transform .15s,box-shadow .15s}
+a.kc[href]:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(74,40,120,.1)}
+.kc-t{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.kc-l{font-weight:700;font-size:13.5px;color:var(--jouf-deep)}
+.kc-v{font-size:32px;font-weight:800;color:var(--kc);line-height:1.25}
+.kc-v small{font-size:15px;color:var(--muted);font-weight:600}
+.kc-s{font-size:11.5px;color:var(--muted)}
+.kc-i{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;color:var(--kc);background:color-mix(in srgb,var(--kc) 12%,#fff);flex:none}
+.wds3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.wds2{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-bottom:16px}
+@media (max-width:1200px){.wds3{grid-template-columns:1fr 1fr}}
+@media (max-width:900px){.kcs{grid-template-columns:1fr 1fr}.wds3,.wds2{grid-template-columns:1fr}}
+.wd{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;box-shadow:0 2px 10px rgba(74,40,120,.05)}
+.wd-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.wd-h b{display:block;font-size:14.5px;color:var(--jouf-deep)}.wd-h small{display:block;font-size:11.5px;color:var(--muted)}
+.wd-i{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--jouf-deep);color:#fff;flex:none}
+.wd-a{margin-right:auto;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:4px 10px;text-decoration:none;color:var(--jouf-deep);white-space:nowrap}
+.wd-a:hover{background:var(--jouf-soft)}
+.wd-row{display:flex;align-items:center;gap:16px}.wd-row>.lg{flex:1}
+.wd-top{align-items:center}
+.donut{position:relative;flex:none}.donut svg{display:block}
+.donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.donut-c b{font-size:22px;font-weight:800;color:var(--jouf-deep);line-height:1.1}.donut-c small{font-size:11px;color:var(--muted)}
+.lg{display:flex;flex-direction:column;gap:9px}
+.lg-r{display:grid;grid-template-columns:10px 92px 1fr 44px;align-items:center;gap:8px;font-size:12.5px}
+.lg-d{width:9px;height:9px;border-radius:50%}
+.lg-b{height:7px;background:#F1EDF7;border-radius:5px;overflow:hidden;display:block}.lg-b i{display:block;height:100%;border-radius:5px}
+.lg-p{color:#fff;border-radius:7px;text-align:center;font-weight:700;font-size:12px;padding:1px 0}
+.mini3{flex:1;display:grid;grid-template-columns:1fr;gap:8px}
+.mc{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--head);text-align:center}
+.mc b{display:block;font-size:20px;color:var(--jouf-deep)}.mc small{font-size:11px;color:var(--muted)}
+.wd-bar{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)}
+.pbs{flex:1;display:flex;flex-direction:column;gap:14px}
+.pb-h{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;margin-bottom:5px}
+.pb-p{font-size:11.5px;border-radius:6px;padding:1px 8px;font-weight:700}
+.pb-t{height:8px;background:#F1EDF7;border-radius:6px;overflow:hidden}.pb-t i{display:block;height:100%;border-radius:6px}
+.score{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--head);display:flex;flex-direction:column;align-items:center;gap:4px;min-width:170px;text-align:center}
+.score small{font-size:11.5px;color:var(--muted)}.score b{font-size:22px}.score .hint{font-size:10.5px}
+.rings2{display:flex;justify-content:space-around;gap:10px;text-align:center}.rings2 small{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.mini2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.mini2 .mc span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini2 .up{border-bottom:3px solid #259650}.mini2 .down{border-bottom:3px solid #D63D3D}.mini2 .up b{color:#259650}.mini2 .down b{color:#D63D3D}
 /* ---------- scrollbars like the training portal ---------- */
 ::-webkit-scrollbar{width:12px;height:12px}
 ::-webkit-scrollbar-track{background:#EFE9F7}
@@ -637,6 +692,7 @@ function shell(content,title,crumb,route){
       <div class="bi"><img src="${LOGO.JU}" alt="جامعة الجوف"></div>
       <div style="min-width:0"><div class="bt">وثيق</div><div class="bs">منصة محاضر وقرارات وحدات ولجان الكلية التطبيقية</div></div></div>
     <div class="tb-l">
+      <label class="tb-search">${icon("search",16)}<input type="search" id="gsearch" placeholder="بحث في المحاضر…" aria-label="بحث في المحاضر"></label>
       <div class="period">العام
         <select data-period="year" aria-label="العام الجامعي">${yrs.map(y=>`<option ${y===S.view.year?"selected":""}>${y}</option>`).join("")}</select>
         <select data-period="semester" aria-label="الفصل الدراسي">${SEMESTERS.map(s=>`<option ${s===S.view.semester?"selected":""}>${s}</option>`).join("")}</select></div>
@@ -649,16 +705,16 @@ function shell(content,title,crumb,route){
     <aside class="sb" id="side">
       <nav class="nav">
         <div class="grp">القائمة الرئيسية</div>
-        <a href="#/home" class="${route==="home"?"on":""}"><span>الرئيسية</span>${returned?`<span class="badge">${returned}</span>`:""}</a>
-        <a href="#/units" class="${route==="units"||route==="unit"?"on":""}"><span>${S.user.role==="supervisor"?"وحداتي":"الوحدات واللجان"}</span></a>
-        <a href="#/minutes" class="${route==="minutes"||route==="minute"?"on":""}"><span>المحاضر</span>${pend?`<span class="badge p">${pend}</span>`:""}</a>
-        <a href="#/archive" class="${route==="archive"?"on":""}"><span>أرشيف المحاضر</span>${S.archive.length?`<span class="hint">${S.archive.length}</span>`:""}</a>
-        <a href="#/decisions" class="${route==="decisions"?"on":""}"><span>متابعة القرارات</span>${lateN?`<span class="badge">${lateN}</span>`:""}</a>
-        <a href="#/stats" class="${route==="stats"?"on":""}"><span>${isViewer()?"النتائج والمؤشرات":isAdmin()?"الإحصائيات والمؤشرات":"إدخال الإحصائيات"}</span>${isAdmin()&&S.reports.filter(r=>r.status==="submitted").length?`<span class="badge p">${S.reports.filter(r=>r.status==="submitted").length}</span>`:""}${!isAdmin()&&!isViewer()&&S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length?`<span class="badge">${S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length}</span>`:""}</a>
+        <a href="#/home" class="${route==="home"?"on":""}"><span>${icon("home")}الرئيسية</span>${returned?`<span class="badge">${returned}</span>`:""}</a>
+        <a href="#/units" class="${route==="units"||route==="unit"?"on":""}"><span>${icon("grid")}${S.user.role==="supervisor"?"وحداتي":"الوحدات واللجان"}</span></a>
+        <a href="#/minutes" class="${route==="minutes"||route==="minute"?"on":""}"><span>${icon("file")}المحاضر</span>${pend?`<span class="badge p">${pend}</span>`:""}</a>
+        <a href="#/archive" class="${route==="archive"?"on":""}"><span>${icon("archive")}أرشيف المحاضر</span>${S.archive.length?`<span class="hint">${S.archive.length}</span>`:""}</a>
+        <a href="#/decisions" class="${route==="decisions"?"on":""}"><span>${icon("check")}متابعة القرارات</span>${lateN?`<span class="badge">${lateN}</span>`:""}</a>
+        <a href="#/stats" class="${route==="stats"?"on":""}"><span>${icon("chart")}${isViewer()?"النتائج والمؤشرات":isAdmin()?"الإحصائيات والمؤشرات":"إدخال الإحصائيات"}</span>${isAdmin()&&S.reports.filter(r=>r.status==="submitted").length?`<span class="badge p">${S.reports.filter(r=>r.status==="submitted").length}</span>`:""}${!isAdmin()&&!isViewer()&&S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length?`<span class="badge">${S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length}</span>`:""}</a>
         ${myU.length?`<div class="grp">وحداتي ولجاني</div>`+myU.map(u=>`<a href="#/unit/${u.id}">${esc(u.name)}</a>`).join(""):""}
-        ${isAdmin()?`<div class="grp">الإدارة</div><a href="#/users" class="${route==="users"?"on":""}">المستخدمون والصلاحيات</a><a href="#/settings" class="${route==="settings"?"on":""}">الإعدادات والوحدات</a>`:""}
+        ${isAdmin()?`<div class="grp">الإدارة</div><a href="#/users" class="${route==="users"?"on":""}"><span>${icon("users")}المستخدمون والصلاحيات</span></a><a href="#/settings" class="${route==="settings"?"on":""}"><span>${icon("gear")}الإعدادات والوحدات</span></a>`:""}
         <div class="grp">الحساب</div>
-        <a href="#" data-act="chpw">تغيير كلمة المرور</a>
+        <a href="#" data-act="chpw"><span>${icon("key")}تغيير كلمة المرور</span></a>
       </nav>
     </aside>
     <main class="ct"><div class="ph">${crumb?`<div class="crumb">${crumb}</div>`:""}<h1>${esc(title)}</h1></div><div class="content">${content}</div></main>
@@ -682,7 +738,7 @@ function viewHome(){
   if(S.user.role==="supervisor"){
     const mine = S.minutes.filter(m=>myUnits().includes(m.unit_id) && ["draft","returned"].includes(m.status));
     const myRep = S.reports.filter(r=>myUnits().includes(r.unit_id)&&r.status==="returned");
-    return {title:"الرئيسية", html: kpis + `
+    return {title:"الرئيسية", html: dashboard(units,sums) + `
       <div class="grid2">
         <div class="panel"><h3>وحداتي ولجاني</h3>${units.map(u=>nodeHTML(u,sums[u.id],false)).join("")||`<div class="empty">لم تُسند إليك وحدة بعد. تواصل مع مشرف الشؤون الأكاديمية.</div>`}</div>
         <div>
@@ -691,7 +747,7 @@ function viewHome(){
         </div>
       </div>`};
   }
-  return {title:"الرئيسية", html: kpis + orgChart(sums) + `
+  return {title:"لوحة المتابعة", html: dashboard(units,sums) + orgChart(sums) + `
     <div class="grid2">
       <div class="panel"><div class="panel-head"><h3>${isAdmin()?"بانتظار اعتمادك":"بانتظار الاعتماد"}</h3><a href="#/minutes" class="hint">كل المحاضر</a></div>
         ${pending.length? pending.map(m=>minuteRow(m)).join("") : `<div class="empty">لا توجد محاضر مرفوعة للاعتماد.</div>`}${S.reports.filter(r=>r.status==="submitted").map(r=>`<div class="list-row"><div><a class="t1" href="#/unit/${r.unit_id}/stats">${esc(unitById(r.unit_id)?.name)} · إحصائيات ${esc(r.semester)}</a><div class="t2">${r.year}هـ</div></div><span class="chip c-submitted">إحصائيات للاعتماد</span></div>`).join("")}</div>
@@ -1210,18 +1266,12 @@ function viewStats(){
   if(isViewer()){
     const appr=units.filter(u=>repStatus(u.id)==="approved");
     return {title:"النتائج والمؤشرات", html:`
-      <div class="kpis"><div class="kpi"><div class="v">${appr.length}<span style="font-size:15px;color:var(--muted);font-weight:500"> / ${units.length}</span></div><div class="l">جهات اعتُمدت نتائجها ${esc(li(S.view.semester))}</div></div>
-        <div class="kpi"><div class="v">${tot.m}</div><div class="l">محاضر ${esc(S.view.semester)}</div></div>
-        <div class="kpi"><div class="v">${pct(tot.dn,tot.d)}%</div><div class="l">تنفيذ القرارات</div></div>
-        <div class="kpi ${tot.l?"alert":""}"><div class="v">${tot.l}</div><div class="l">قرارات متأخرة</div></div></div>
+      <div class="kcs">${kpiCard("check",DC.green,`${appr.length}<small> / ${units.length}</small>`,"جهات معتمدة النتائج",esc(S.view.semester),"")}${kpiCard("file",DC.blue,tot.m,"محاضر الفصل",esc(S.view.semester),"#/minutes")}${kpiCard("chart",pctColor(pct(tot.dn,tot.d)),pct(tot.dn,tot.d)+"%","تنفيذ القرارات","من قرارات العام","#/decisions")}${kpiCard("alert",DC.red,tot.l,"قرارات متأخرة","تجاوزت موعدها","#/decisions?late=1")}</div>
       <div class="res-grid">${appr.map(resultCard).join("")||`<div class="panel"><div class="empty">لم تُعتمد نتائج أي جهة لهذا الفصل بعد.</div></div>`}</div>
       ${units.length>appr.length?`<div class="panel"><h3>جهات لم تُعتمد نتائجها بعد (${units.length-appr.length})</h3><div class="hint">${units.filter(u=>repStatus(u.id)!=="approved").map(u=>esc(u.name)).join("، ")}</div></div>`:""}`};
   }
   return {title:"الإحصائيات والمؤشرات", html:`
-    <div class="kpis"><div class="kpi pend"><div class="v">${cnt("submitted")}</div><div class="l">إحصائيات بانتظار الاعتماد</div></div>
-      <div class="kpi"><div class="v">${cnt("approved")}<span style="font-size:15px;color:var(--muted);font-weight:500"> / ${units.length}</span></div><div class="l">جهات معتمدة ${esc(li(S.view.semester))}</div></div>
-      <div class="kpi"><div class="v">${cnt("none")+cnt("draft")}</div><div class="l">جهات لم ترفع بعد</div></div>
-      <div class="kpi ${tot.l?"alert":""}"><div class="v">${pct(tot.dn,tot.d)}%</div><div class="l">تنفيذ القرارات (${tot.l} متأخر)</div></div></div>
+    <div class="kcs">${kpiCard("clock",DC.blue,cnt("submitted"),"بانتظار الاعتماد","إحصائيات مرفوعة","")}${kpiCard("check",DC.green,`${cnt("approved")}<small> / ${units.length}</small>`,"جهات معتمدة",esc(S.view.semester),"")}${kpiCard("pause",DC.orange,cnt("none")+cnt("draft"),"لم ترفع بعد","مسودة أو لم تبدأ","")}${kpiCard("chart",pctColor(pct(tot.dn,tot.d)),pct(tot.dn,tot.d)+"%","تنفيذ القرارات",`${tot.l} قرار متأخر`,"#/decisions")}</div>
     <div class="panel tbl-wrap"><div class="panel-head"><h3>حالة إحصائيات الوحدات واللجان · ${esc(S.view.semester)} ${S.view.year}هـ</h3><button class="btn sm" data-act="csvstats">تصدير CSV</button></div>
       <table class="t"><thead><tr><th>الوحدة / اللجنة</th><th>حالة الإحصائيات</th><th>آخر تحديث</th><th>محاضر الفصل</th><th>تنفيذ القرارات</th><th>تغطية المهام</th><th></th></tr></thead><tbody>
       ${sums.map(([u,s])=>{ const rep=reportOf(u.id); const st=rep?.status||"none"; return `<tr class="clk" data-href="#/unit/${u.id}/stats"><td><b>${esc(u.name)}</b></td>
@@ -1334,6 +1384,90 @@ function tabsToBlocks(text){
   return out.join("\n");
 }
 function insertAtCursor(ta,txt){ const s=ta.selectionStart??ta.value.length, e=ta.selectionEnd??s; ta.setRangeText(txt,s,e,"end"); ta.dispatchEvent(new Event("input",{bubbles:true})); }
+
+/* ---------------- dashboard widgets ---------------- */
+const IC={
+  home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  file:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  archive:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
+  check:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-6"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a5.5 5.5 0 0 1 3.5 6"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M17 6l3 3M14 9l2 2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  alert:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  pause:'<circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'
+};
+const icon=(k,s=18)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||""}</svg>`;
+const DC={purple:"#723DC9",orange:"#F58432",green:"#259650",deep:"#1F6F43",red:"#D63D3D",blue:"#4468B6",amber:"#E2A203",teal:"#12A594",grey:"#9AA0AA"};
+function donut(segs,center,sub,size=150){
+  const r=52, C=2*Math.PI*r, tot=segs.reduce((a,s)=>a+s.v,0); let off=0;
+  const arcs=tot? segs.filter(s=>s.v>0).map(s=>{ const len=C*s.v/tot; const el=`<circle r="${r}" cx="65" cy="65" fill="none" stroke="${s.c}" stroke-width="14" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 65 65)"/>`; off+=len; return el; }).join("") : "";
+  return `<div class="donut" style="width:${size}px;height:${size}px"><svg viewBox="0 0 130 130" width="${size}" height="${size}"><circle r="${r}" cx="65" cy="65" fill="none" stroke="#EEE9F5" stroke-width="14"/>${arcs}</svg><div class="donut-c"><small>${sub}</small><b>${center}</b></div></div>`;
+}
+function ring(p,color,size=110,label){
+  const r=46, C=2*Math.PI*r, len=C*Math.max(0,Math.min(100,p))/100;
+  return `<div class="donut" style="width:${size}px;height:${size}px"><svg viewBox="0 0 110 110" width="${size}" height="${size}"><circle r="${r}" cx="55" cy="55" fill="none" stroke="#EEE9F5" stroke-width="10"/>${p>0?`<circle r="${r}" cx="55" cy="55" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${len} ${C-len}" transform="rotate(-90 55 55)"/>`:""}</svg><div class="donut-c"><b style="color:${color}">${p}%</b>${label?`<small>${label}</small>`:""}</div></div>`;
+}
+const pctColor=p=>p>=90?DC.deep:p>=70?DC.green:p>=50?DC.amber:DC.red;
+function kpiCard(ic,color,val,title,sub,href){
+  return `<a class="kc" ${href?`href="${href}"`:""} style="--kc:${color}"><div class="kc-t"><div><div class="kc-l">${title}</div><div class="kc-v">${val}</div><div class="kc-s">${sub||""}</div></div><span class="kc-i">${icon(ic,24)}</span></div></a>`;
+}
+function widget(ic,title,sub,body,link){
+  return `<section class="wd"><div class="wd-h"><span class="wd-i">${icon(ic,20)}</span><div><b>${title}</b><small>${sub||""}</small></div>${link||""}</div>${body}</section>`;
+}
+function legendRows(rows,max){
+  const m=max||Math.max(1,...rows.map(r=>r.v));
+  return `<div class="lg">${rows.map(r=>`<div class="lg-r"><span class="lg-d" style="background:${r.c}"></span><span class="lg-n">${r.n}</span><span class="lg-b"><i style="width:${Math.round(r.v*100/m)}%;background:${r.c}"></i></span><span class="lg-p" style="background:${r.c}">${r.v}</span></div>`).join("")}</div>`;
+}
+function dashboard(units,sums){
+  const yr=S.view.year, sem=S.view.semester, ids=new Set(units.map(u=>u.id));
+  const mins=S.minutes.filter(m=>ids.has(m.unit_id)&&m.year===yr);
+  const semMin=mins.filter(m=>m.semester===sem);
+  const decs=S.decisions.filter(d=>ids.has(d.unit_id)&&mins.some(m=>m.id===d.minute_id));
+  const late=decs.filter(isLate).length;
+  const pendM=S.minutes.filter(m=>ids.has(m.unit_id)&&m.status==="submitted").length;
+  const pendR=S.reports.filter(r=>ids.has(r.unit_id)&&r.status==="submitted").length;
+  const idle=units.filter(u=>!sums[u.id].minutes).length;
+  const kpis=`<div class="kcs">
+    ${kpiCard("file",DC.green,semMin.length,`محاضر ${esc(sem)}`,`${semMin.filter(m=>m.status==="approved").length} معتمد منها`,"#/minutes")}
+    ${kpiCard("clock",DC.blue,pendM+pendR,"بانتظار الاعتماد",`${pendM} محضر · ${pendR} إحصائيات`,isAdmin()?"#/minutes?status=submitted":"")}
+    ${kpiCard("alert",DC.red,late,"قرارات متأخرة","تجاوزت موعد التنفيذ","#/decisions?late=1")}
+    ${kpiCard("pause",DC.orange,`${idle}<small> / ${units.length}</small>`,"جهات لم تجتمع",`خلال ${esc(sem)}`,"#/units")}</div>`;
+  const ms={draft:0,submitted:0,returned:0,approved:0}; mins.forEach(m=>ms[m.status]++);
+  const minW=widget("file","إحصائيات المحاضر",`حالة محاضر ${yr}هـ`,
+    `<div class="wd-row">${legendRows([{n:"مسودة",v:ms.draft,c:DC.purple},{n:"بانتظار الاعتماد",v:ms.submitted,c:DC.orange},{n:"معاد للتعديل",v:ms.returned,c:DC.amber},{n:"معتمد",v:ms.approved,c:DC.deep}])}${donut([{v:ms.draft,c:DC.purple},{v:ms.submitted,c:DC.orange},{v:ms.returned,c:DC.amber},{v:ms.approved,c:DC.deep}],mins.length,"إجمالي")}</div>`,
+    `<a class="wd-a" href="#/minutes">عرض المحاضر ‹</a>`);
+  const ds={n:0,p:0,d:0,l:0,c:0}; decs.forEach(d=>{ if(isLate(d)) ds.l++; else if(d.status==="done") ds.d++; else if(d.status==="in_progress") ds.p++; else if(d.status==="cancelled") ds.c++; else ds.n++; });
+  const decW=widget("check","متابعة القرارات",`قرارات محاضر ${yr}هـ`,
+    `<div class="wd-row">${legendRows([{n:"لم يبدأ",v:ds.n,c:DC.purple},{n:"قيد التنفيذ",v:ds.p,c:DC.blue},{n:"منفّذ",v:ds.d,c:DC.deep},{n:"متأخر",v:ds.l,c:DC.red},{n:"ملغى",v:ds.c,c:DC.grey}])}${donut([{v:ds.n,c:DC.purple},{v:ds.p,c:DC.blue},{v:ds.d,c:DC.deep},{v:ds.l,c:DC.red},{v:ds.c,c:DC.grey}],decs.length,"إجمالي")}</div>`,
+    `<a class="wd-a" href="#/decisions">متابعة القرارات ‹</a>`);
+  const su=units.filter(u=>(u.stats||[]).length); const rc={none:0,draft:0,submitted:0,returned:0,approved:0}; su.forEach(u=>rc[repStatus(u.id)]++);
+  const apP=pct(rc.approved,su.length);
+  const repW=widget("chart","الإحصائيات الفصلية",`${esc(sem)} ${yr}هـ`,
+    `<div class="wd-row">${ring(apP,pctColor(apP),130,"معتمدة")}<div class="mini3">
+      <div class="mc"><b>${su.length}</b><small>الجهات المطلوبة</small></div><div class="mc"><b style="color:${DC.blue}">${rc.submitted}</b><small>بانتظار الاعتماد</small></div><div class="mc"><b style="color:${DC.orange}">${rc.none+rc.draft+rc.returned}</b><small>لم تُعتمد بعد</small></div></div></div>
+     <div class="wd-bar"><span>نسبة الجهات المعتمدة</span><span class="lg-b"><i style="width:${apP}%;background:${pctColor(apP)}"></i></span><b>${apP}%</b></div>`,
+    `<a class="wd-a" href="#/stats">${isViewer()?"النتائج":"الإحصائيات"} ‹</a>`);
+  const grpRows=Object.entries(GROUPS).map(([g,info])=>{ const us=units.filter(u=>u.grp===g); if(!us.length) return null;
+    const ss=us.map(u=>sums[u.id]); const dTot=ss.reduce((a,s)=>a+s.decisions,0), dDone=ss.reduce((a,s)=>a+s.done,0);
+    const cov=Math.round(ss.reduce((a,s)=>a+s.coverage,0)/ss.length); const met=pct(ss.filter(s=>s.minutes).length,ss.length);
+    return {name:info.title.replace("نائب الرئيس التنفيذي للشؤون الأكاديمية","الشؤون الأكاديمية").replace("مساعد الرئيس التنفيذي للخدمات المساندة","الخدمات المساندة"),comp:dTot?pct(dDone,dTot):null,cov,met}; }).filter(Boolean);
+  const allS=units.map(u=>sums[u.id]); const dT=allS.reduce((a,s)=>a+s.decisions,0), dD=allS.reduce((a,s)=>a+s.done,0);
+  const covAll=Math.round(allS.reduce((a,s)=>a+s.coverage,0)/(allS.length||1)), metAll=pct(allS.filter(s=>s.minutes).length,allS.length), compAll=dT?pct(dD,dT):0;
+  const overall=Math.round((covAll+metAll+compAll)/3);
+  const bar=(label,p)=>`<div class="pb"><div class="pb-h"><span>${label}</span><span class="pb-p" style="color:${p==null?DC.grey:pctColor(p)};background:${p==null?"#F1F1F4":pctColor(p)+"1A"}">${p==null?"—":p+"%"}</span></div><div class="pb-t"><i style="width:${p||0}%;background:${p==null?DC.grey:pctColor(p)}"></i></div></div>`;
+  const perfW=widget("chart","مؤشرات أداء الجهات","تنفيذ القرارات حسب المستوى التنظيمي",
+    `<div class="wd-row wd-top">${`<div class="pbs">${grpRows.map(g=>bar(g.name,g.comp)).join("")}</div>`}<div class="score">${ring(overall,pctColor(overall),130)}<small>المؤشر العام للأداء</small><span class="hint">متوسط: الاجتماع، تغطية المهام، تنفيذ القرارات</span></div></div>`);
+  const bestU=[...units].sort((a,b)=>sums[b.id].coverage-sums[a.id].coverage)[0], worstU=[...units].sort((a,b)=>sums[a.id].coverage-sums[b.id].coverage)[0];
+  const covW=widget("grid","تغطية المهام والاجتماعات","مدى انعقاد الاجتماعات ومناقشة مهام قرارات التشكيل",
+    `<div class="rings2"><div>${ring(metAll,pctColor(metAll),120)}<small>الجهات التي اجتمعت</small></div><div>${ring(covAll,pctColor(covAll),120)}<small>متوسط تغطية المهام</small></div></div>
+     ${units.length>1?`<div class="mini2"><div class="mc up"><small>↑ الأعلى تغطية</small><b>${sums[bestU.id].coverage}%</b><span>${esc(bestU.name)}</span></div><div class="mc down"><small>↓ الأقل تغطية</small><b>${sums[worstU.id].coverage}%</b><span>${esc(worstU.name)}</span></div></div>`:""}`);
+  return kpis+`<div class="wds3">${minW}${decW}${repW}</div><div class="wds2">${perfW}${covW}</div>`;
+}
 
 /* ---------------- suggested agenda topics ---------------- */
 const DISC_TOPICS=[["s",0,"التوعية بلائحة تأديب الطلاب وقواعد السلوك مع بداية الفصل الدراسي"],["a",0,"دراسة حالات الإخلال بالنظام المحالة إلى اللجنة"],["m",2,"دراسة محاضر الغش في الاختبارات الفصلية"],["e",2,"دراسة محاضر الغش في الاختبارات النهائية"],["a",1,"رفع توصيات اللجنة إلى الجهات المختصة وفق لائحة تأديب الطلاب والطالبات"]];
@@ -1927,6 +2061,7 @@ function afterRender(){
   bindEditor();
   bindArchive();
   bindReport();
+  const gs=$("#gsearch"); if(gs) gs.onkeydown=e=>{ if(e.key==="Enter"&&gs.value.trim()){ AR.q=gs.value.trim(); AR.unit=""; AR.year=""; AR.results=null; go("#/archive"); setTimeout(()=>runArchiveSearch(()=>{ const el=$("#arch-res"); if(el) el.innerHTML=archiveResultsHTML(false); }),30); } };
 }
 
 boot();
