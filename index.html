@@ -388,6 +388,19 @@ a.kc[href]:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(74,40,120
 .q-ic{font-size:22px;line-height:1}.q-tx b{display:block;color:#fff;font-size:13px}.q-tx small{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.8);font-size:11px}
 .live-dot{width:7px;height:7px;border-radius:50%;background:#FF5A5A;box-shadow:0 0 0 0 rgba(255,90,90,.7);animation:livePulse 1.6s infinite}
 @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(255,90,90,.7)}70%{box-shadow:0 0 0 7px rgba(255,90,90,0)}100%{box-shadow:0 0 0 0 rgba(255,90,90,0)}}
+#qdock{display:none;position:fixed;right:0;bottom:0;width:240px;z-index:35;background:#5E3A7A;border-top:1px solid rgba(255,255,255,.25);box-shadow:0 -6px 18px rgba(50,20,80,.25)}
+#qdock.on{display:block}
+#qdock.big{width:min(560px,92vw);right:auto;left:16px;bottom:16px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.3)}
+.q-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;color:#fff;font-size:12px;font-weight:700}
+.q-head span{display:flex;align-items:center;gap:6px}
+.q-head button{background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:6px;width:26px;height:24px;cursor:pointer}
+.q-body{position:relative;aspect-ratio:16/9;background:#000}
+.q-body video,.q-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.q-err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;color:#fff;font-size:12px;padding:10px;line-height:1.8}
+.q-err a{color:#E9D8FF}
+.q-alt{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10.5px;background:rgba(0,0,0,.45);padding:2px}.q-alt a{color:#E9D8FF}
+body.q-open .sb{padding-bottom:190px}
+@media (max-width:900px){#qdock{width:min(320px,90vw);right:auto;left:10px;bottom:10px;border-radius:12px;overflow:hidden}}
 /* ---------- scrollbars like the training portal ---------- */
 ::-webkit-scrollbar{width:12px;height:12px}
 ::-webkit-scrollbar-track{background:#EFE9F7}
@@ -698,7 +711,7 @@ function renderForcePw(){
     try{ await Store.changePassword(f.a.value); S.user.must_change_password=false; toast("تم حفظ كلمة المرور"); render(); }catch(err){ $("#perr").innerHTML=`<div class="err">${esc(err.message)}</div>`; }
   };
 }
-async function logout(){ await Store.signOut(); S.user=null; S.view={year:null,semester:null}; location.hash=""; render(); }
+async function logout(){ quranClose(); await Store.signOut(); S.user=null; S.view={year:null,semester:null}; location.hash=""; render(); }
 
 /* ---------------- shell ---------------- */
 function initials(n){ const w=String(n||"").replace(/^(أ\.د\.|أ\.?\s?د\.?|د\.|أ\.)\s*/,"").trim().split(/\s+/); return ((w[0]||"")[0]||"")+((w[1]||"")[0]||""); }
@@ -735,7 +748,7 @@ function shell(content,title,crumb,route){
         <a href="#/stats" class="${route==="stats"?"on":""}"><span>${icon("chart")}${isViewer()?"النتائج والمؤشرات":isAdmin()?"الإحصائيات والمؤشرات":"إدخال الإحصائيات"}</span>${isAdmin()&&S.reports.filter(r=>r.status==="submitted").length?`<span class="badge p">${S.reports.filter(r=>r.status==="submitted").length}</span>`:""}${!isAdmin()&&!isViewer()&&S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length?`<span class="badge">${S.reports.filter(r=>r.status==="returned"&&myUnits().includes(r.unit_id)).length}</span>`:""}</a>
         ${myU.length?`<div class="grp">وحداتي ولجاني</div>`+myU.map(u=>`<a href="#/unit/${u.id}">${esc(u.name)}</a>`).join(""):""}
         ${isAdmin()?`<div class="grp">الإدارة</div><a href="#/users" class="${route==="users"?"on":""}"><span>${icon("users")}المستخدمون والصلاحيات</span></a><a href="#/settings" class="${route==="settings"?"on":""}"><span>${icon("gear")}الإعدادات والوحدات</span></a>`:""}
-        <a class="quran-link" href="${QURAN_URL}" target="_blank" rel="noopener"><span class="q-ic">🕋</span><span class="q-tx"><b>قناة القرآن الكريم</b><small><i class="live-dot"></i>بث مباشر من مكة المكرمة</small></span></a>
+        <a class="quran-link" href="#" data-act="quran"><span class="q-ic">🕋</span><span class="q-tx"><b>قناة القرآن الكريم</b><small><i class="live-dot"></i>اضغط لمشاهدة البث المباشر</small></span></a>
         <div class="grp">الحساب</div>
         <a href="#" data-act="chpw"><span>${icon("key")}تغيير كلمة المرور</span></a>
       </nav>
@@ -1137,6 +1150,10 @@ function viewSettings(){
         <label class="f" style="margin:0"><span>العام الجامعي (هـ)</span><input class="inp" name="year" value="${esc(S.settings.year||"1448")}" style="width:120px"></label>
         <label class="f" style="margin:0"><span>الفصل الحالي</span><select class="inp" name="semester">${SEMESTERS.map(s=>`<option ${s===S.settings.semester?"selected":""}>${s}</option>`).join("")}</select></label>
         <button class="btn primary">حفظ</button></div></form>
+    <form class="panel" id="qsetf"><h3>بث قناة القرآن الكريم في القائمة الجانبية</h3>
+      <p class="hint" style="margin-top:-6px">إذا كان البث محجوبًا على شبكة الجامعة، جرّب مصدرًا آخر من الشبكة نفسها واحفظ الذي يعمل. يدعم المشغل روابط البث المباشر (m3u8) وروابط يوتيوب وصفحات البث.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">${QURAN_SOURCES.map(x=>`<button type="button" class="btn sm" data-qsrc="${esc(x.u)}">${esc(x.t)}</button>`).join("")}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="inp" name="src" dir="ltr" style="flex:1;min-width:260px" value="${esc(quranSrc())}"><button type="button" class="btn" data-qtest>تجربة</button><button class="btn primary">حفظ</button></div></form>
     <div class="panel"><h3>تشكيل الوحدات واللجان ومهامها</h3><p class="hint" style="margin-top:-6px">حدّث التشكيل عند صدور قرار جديد. المؤشرات النوعية لكل وحدة مرتبطة بمهامها.</p>
       ${S.units.map(u=>`<div class="list-row"><div><div class="t1">${esc(u.name)}</div><div class="t2">${u.members.length} أعضاء، ${u.tasks.length} مهمة، ${u.stats.length} مؤشرات</div></div><button class="btn sm" data-edit-unit="${u.id}">تعديل</button></div>`).join("")}</div>`};
 }
@@ -1560,6 +1577,38 @@ function summaryFor(r,a){
   }
   return "";
 }
+
+/* ---------------- Quran channel mini player ---------------- */
+const QURAN_SOURCES=[
+  {t:"البث الرسمي لقناة القرآن الكريم (HLS)",u:"https://win.holol.com/live/quran/playlist.m3u8"},
+  {t:"صفحة البث على Makkah Live",u:"https://makkahlive.net/tvquran.aspx"}
+];
+const quranSrc=()=> (S.settings&&S.settings.quran_src) || QURAN_SOURCES[0].u;
+let qHls=null;
+function ytEmbed(u){ let m=u.match(/[?&]v=([\w-]{6,})/)||u.match(/youtu\.be\/([\w-]{6,})/)||u.match(/youtube\.com\/(?:live|embed)\/([\w-]{6,})/); if(m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1`; m=u.match(/channel\/(UC[\w-]+)/); if(m) return `https://www.youtube.com/embed/live_stream?channel=${m[1]}&autoplay=1&mute=1`; return null; }
+function qFail(msg){ const b=$("#qbody"); if(!b) return; b.innerHTML=`<div class="q-err">${esc(msg)}<br><a href="${esc(quranSrc())}" target="_blank" rel="noopener">فتح في نافذة جديدة</a>${isAdmin()?`<a href="#/settings">تغيير المصدر</a>`:""}</div>`; }
+async function quranOpen(){
+  let d=$("#qdock"); if(!d){ d=document.createElement("div"); d.id="qdock"; document.body.appendChild(d); }
+  const u=quranSrc();
+  d.innerHTML=`<div class="q-head"><span><i class="live-dot"></i> قناة القرآن الكريم · مباشر</span><span><button type="button" data-q="big" title="تكبير">⤢</button><button type="button" data-q="close" title="إغلاق">✕</button></span></div><div id="qbody" class="q-body"><div class="q-err">جارٍ تشغيل البث…</div></div>`;
+  d.classList.add("on"); document.body.classList.add("q-open");
+  d.onclick=e=>{ const b=e.target.closest("[data-q]"); if(!b) return; if(b.dataset.q==="close") quranClose(); if(b.dataset.q==="big") d.classList.toggle("big"); };
+  const body=$("#qbody");
+  if(/\.m3u8(\?|$)/i.test(u)){
+    body.innerHTML=`<video id="qvid" controls autoplay muted playsinline></video>`; const v=$("#qvid");
+    const to=setTimeout(()=>{ if(v.readyState<2) qFail("تعذّر تشغيل البث على هذه الشبكة، ربما بسبب الحجب."); },15000);
+    v.addEventListener("playing",()=>clearTimeout(to),{once:true});
+    if(v.canPlayType("application/vnd.apple.mpegurl")){ v.src=u; v.onerror=()=>{ clearTimeout(to); qFail("تعذّر تشغيل البث على هذه الشبكة، ربما بسبب الحجب."); }; return; }
+    try{ await loadScript("https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"); }catch(e){ clearTimeout(to); return qFail("تعذّر تحميل مشغل البث."); }
+    if(!window.Hls||!Hls.isSupported()){ clearTimeout(to); return qFail("المتصفح لا يدعم هذا النوع من البث."); }
+    qHls=new Hls(); qHls.loadSource(u); qHls.attachMedia(v);
+    qHls.on(Hls.Events.ERROR,(_,data)=>{ if(data.fatal){ clearTimeout(to); qFail("تعذّر تشغيل البث على هذه الشبكة، ربما بسبب الحجب."); try{ qHls.destroy(); }catch(e){} qHls=null; } });
+    return;
+  }
+  const yt=ytEmbed(u);
+  body.innerHTML=`<iframe src="${esc(yt||u)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="no-referrer"></iframe><div class="q-alt"><a href="${esc(u)}" target="_blank" rel="noopener">لا يظهر البث؟ افتحه في نافذة جديدة</a></div>`;
+}
+function quranClose(){ try{ qHls&&qHls.destroy(); }catch(e){} qHls=null; const d=$("#qdock"); if(d){ d.classList.remove("on","big"); d.innerHTML=""; } document.body.classList.remove("q-open"); }
 
 /* ---------------- suggested agenda topics ---------------- */
 const DISC_TOPICS=[["s",0,"التوعية بلائحة تأديب الطلاب وقواعد السلوك مع بداية الفصل الدراسي"],["a",0,"دراسة حالات الإخلال بالنظام المحالة إلى اللجنة"],["m",2,"دراسة محاضر الغش في الاختبارات الفصلية"],["e",2,"دراسة محاضر الغش في الاختبارات النهائية"],["a",1,"رفع توصيات اللجنة إلى الجهات المختصة وفق لائحة تأديب الطلاب والطالبات"]];
@@ -2110,6 +2159,7 @@ function afterRender(){
     const b=e.target.closest("[data-act],[data-mstatus],[data-edit-user],[data-reset-user],[data-newuser-for],[data-edit-unit]"); if(!b) return;
     const a=b.dataset.act;
     if(a==="logout") return logout();
+    if(a==="quran"){ e.preventDefault(); return $("#qdock.on")? quranClose() : quranOpen(); }
     if(a==="chpw"){ e.preventDefault(); $("#side")?.classList.remove("open"); return chpwModal(); }
     if(a==="menu") return $("#side").classList.toggle("open");
     if(a==="print") return window.print();
@@ -2149,7 +2199,9 @@ function afterRender(){
     if(t.dataset.decStatus){ try{ await Store.update("decisions",t.dataset.decStatus,{status:t.value,updated_at:new Date().toISOString()}); await loadAll(); toast("حُدّثت حالة القرار"); render(); }catch(err){ toast(err.message); } }
     if(t.dataset.decNote){ try{ await Store.update("decisions",t.dataset.decNote,{progress_note:t.value,updated_at:new Date().toISOString()}); const d=S.decisions.find(x=>x.id===t.dataset.decNote); if(d) d.progress_note=t.value; toast("حُفظت الملاحظة"); }catch(err){ toast(err.message); } }
   };
-    const st=$("#setf"); if(st) st.onsubmit=async e=>{ e.preventDefault(); try{ await Store.upsert("settings",[{key:"year",value:st.year.value.trim()},{key:"semester",value:st.semester.value}],["key"]); await loadAll(); S.view.year=S.settings.year; S.view.semester=S.settings.semester; toast("حُفظت الإعدادات"); render(); }catch(err){ toast(err.message); } };
+    const qf=$("#qsetf"); if(qf){ qf.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.qsrc){ qf.src.value=b.dataset.qsrc; } if(b.dataset.qtest!==undefined){ S.settings.quran_src_tmp=qf.src.value; const old=S.settings.quran_src; S.settings.quran_src=qf.src.value.trim(); quranOpen(); S.settings.quran_src=old; } };
+    qf.onsubmit=async e=>{ e.preventDefault(); try{ await Store.upsert("settings",[{key:"quran_src",value:qf.src.value.trim()}],["key"]); await loadAll(); toast("حُفظ مصدر البث"); }catch(err){ toast(err.message); } }; }
+  const st=$("#setf"); if(st) st.onsubmit=async e=>{ e.preventDefault(); try{ await Store.upsert("settings",[{key:"year",value:st.year.value.trim()},{key:"semester",value:st.semester.value}],["key"]); await loadAll(); S.view.year=S.settings.year; S.view.semester=S.settings.semester; toast("حُفظت الإعدادات"); render(); }catch(err){ toast(err.message); } };
   bindEditor();
   bindArchive();
   bindReport();
